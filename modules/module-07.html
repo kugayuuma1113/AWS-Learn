@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="注文・利用者・商品をどう保存し、どう取り出すか。データモデル、運用の分担、キャッシュ、バックアップを分けて理解します。">
+<title>Module 7 | データの関係と、読み書きの設計
+</title>
+<link rel="stylesheet" href="../assets/css/style.css?v=20261006-5">
+<link rel="stylesheet" href="../assets/css/curriculum.css?v=20261006-curriculum-5">
+<script src="../assets/js/main.js" defer></script>
+</head>
+<body><a class="skip-link" href="#main">本文へスキップ</a>
+<header class="site-header"><a class="brand" href="../index.html"><span class="brand-mark">a /</span>AWS STUDY NOTES</a><span class="header-meta">SKILL BUILDER · VISUAL LEARNING</span>
+</header>
+<div class="shell">
+<aside class="toc">
+<p class="eyebrow toc-title">IN THIS MODULE
+</p>
+<nav aria-label="このページの目次">
+<ol>
+<li><a href="#relational"><span>01</span>リレーショナルDB</a>
+</li>
+<li><a href="#managed"><span>02</span>EC2・RDS・Aurora</a>
+</li>
+<li><a href="#dynamodb"><span>03</span>Amazon DynamoDB</a>
+</li>
+<li><a href="#application"><span>04</span>アプリからDBを使う</a>
+</li>
+<li><a href="#cache"><span>05</span>ElastiCacheとDAX</a>
+</li>
+<li><a href="#purpose"><span>06</span>専用DBとバックアップ</a>
+</li>
+<li><a href="#review"><span>07</span>重要ポイントと復習</a>
+</li>
+<li><a href="#sources"><span>08</span>公式資料</a>
+</li>
+</ol>
+</nav><a class="toc-home" href="../index.html">← 学習ホームへ</a>
+</aside>
+<main id="main" class="article">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <span class="term">Module</span> 07
+</div>
+<header class="hero">
+<p class="eyebrow"><span class="term">MODULE</span> 07 / <span class="term">DATABASES</span>
+</p>
+<h1><span class="heading-part">データの関係と、</span> <span class="heading-part">読み書きの設計</span>
+</h1>
+<p class="lead">注文・<span class="term">利用者</span>・商品をどう保存し、どう取り出すか。データモデル、運用の分担、<span class="term">キャッシュ、</span><span class="term">バックアップ</span>を分けて<span class="term">理解します。</span>
+</p>
+<div class="hero-meta"><span class="tag">7つの学習セクション</span><span class="tag">図解＋比較表＋復習</span><span class="tag">公式資料確認：2026.10.06</span>
+</div>
+<div class="learning-goals">
+<h2>このModuleで学ぶこと
+</h2>
+<div class="goal-grid">
+<p><b>01</b><span>リレーショナルとキー・バリューの違いを<span class="term">説明する</span></span>
+</p>
+<p><b>02</b><span>RDS・<span class="term">Aurora</span>・DynamoDBの役割を<span class="term">整理する</span></span>
+</p>
+<p><b>03</b><span>アプリからの接続とクエリの流れを<span class="term">理解する</span></span>
+</p>
+<p><b>04</b><span><span class="term">キャッシュ</span>と<span class="term">バックアップ</span>を原本の保存と<span class="term">区別する</span></span>
+</p>
+</div>
+</div>
+</header>
+<section id="relational" class="chapter" aria-labelledby="relational-title">
+<div class="section-title"><span class="section-number">01</span>
+<h2 id="relational-title"><span class="heading-part">IDで関係を作り、</span> <span class="heading-part">必要な情報を取り出す</span>
+</h2>
+</div>
+<p><strong>リレーショナルデータベース</strong>は、行と列からなるテーブルでデータを<span class="term">管理します。</span>主キーで行を識別し、外部キーで別テーブルの行を参照します。注文に<span class="term">利用者</span>の名前を毎回コピーせず、IDで<span class="term">関連付けられます。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">利用者・商品・注文を、</span> <span class="label-part">別テーブルで管理する</span></strong><span class="diagram-kind"><span class="term">RELATIONSHIP</span></span>
+</div>
+<div class="diagram-body">
+<div class="relation-grid">
+<div class="relation-card">
+<h3>Users｜利用者
+</h3>
+<ul>
+<li><span class="relation-key"><span class="term">UserID</span> = U001（主キー）</span>
+</li>
+<li>Name = Sato
+</li>
+</ul>
+</div>
+<div class="relation-card">
+<h3>Products｜商品
+</h3>
+<ul>
+<li><span class="relation-key"><span class="term">ProductID</span> = P01（主キー）</span>
+</li>
+<li>Name = Book
+</li>
+</ul>
+</div>
+<div class="relation-card">
+<h3>Orders｜注文
+</h3>
+<ul>
+<li><span class="relation-key"><span class="term">OrderID</span> = O101（主キー）</span>
+</li>
+<li><span class="term">UserID</span> = U001（外部キー）
+</li>
+<li><span class="term">ProductID</span> = P01（外部キー）
+</li>
+<li><span class="term">Quantity</span> = 2
+</li>
+</ul>
+</div>
+<div class="service data"><strong><span class="label-part">IDで関連付ける</span></strong><small><span class="label-part">Orders → Users / Products</span></small>
+</div>
+</div>
+</div>
+<figcaption>主キーは行を識別する値。外部キーは別テーブルのキーを参照します。矢印表記は参照関係であり、通信の向き<span class="term">ではありません。</span>
+</figcaption>
+</figure>
+<p>SQLでは、条件で絞り、テーブルを結合し、集計できます。例の注文を<span class="term">利用者</span>名・商品名と合わせて取り出すなら、OrdersのUserID・ProductIDを使ってUsers・ProductsとJOINします。<strong>正しく関連付けたモデルが、取り出したい情報を<span class="term">支えます。</span></strong>
+</p>
+<aside class="note "><strong><span class="label-part">補足：DBMSと、</span> <span class="label-part">データモデル</span></strong>MySQLやPostgreSQLなどは、データを保存・<span class="term">操作する</span>DBMSです。リレーショナルはデータの扱い方、SQLは操作のための言語。AWSサービスの名前とは別の分類です。
+</aside>
+</section>
+<section id="managed" class="chapter" aria-labelledby="managed-title">
+<div class="section-title"><span class="section-number">02</span>
+<h2 id="managed-title"><span class="heading-part">基盤の運用を、</span> <span class="heading-part">どこまで任せるか</span>
+</h2>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="リレーショナルDBの運用の分担。狭い画面では横にスクロールできます">
+<table>
+<caption>リレーショナルDBの運用の分担
+</caption>
+<thead>
+<tr>
+<th scope="col">方式
+</th>
+<th scope="col">AWSが<span class="term">管理する</span>範囲
+</th>
+<th scope="col"><span class="term">利用者</span>が考えること
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">EC2上でDBを自分で運用
+</th>
+<td>物理・仮想化基盤
+</td>
+<td>OS・DBの更新、<span class="term">バックアップ、</span>可用性、データ設計
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Amazon</span> RDS
+</th>
+<td>基盤・DB運用の多くを自動化
+</td>
+<td>エンジン選択、権限、データ、性能、<span class="term">バックアップ</span>等の設定
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Amazon</span> <span class="term">Aurora</span>
+</th>
+<td>RDSで<span class="term">利用する</span>MySQL / PostgreSQL互換基盤
+</td>
+<td>互換性、クラスター構成、権限、データ・性能の設計
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong><span class="term">Amazon</span> RDS</strong>は、複数のリレーショナルDBエンジンを選べるマネージドサービスです。<strong><span class="term">Aurora</span></strong>はMySQL／PostgreSQL互換で、計算と<span class="term">ストレージ</span>を分離したAWSのDB基盤です。標準的なAuroraクラスターでは、複数AZにデータを保ち、読み取りレプリカを配置できます。
+</p>
+<div class="two-col">
+<div class="explain-card">
+<h3><span class="label-part">可用性と読み取り能力</span>
+</h3>
+<p><span class="term">Multi-</span>AZは障害への備え、読み取りレプリカは読み取りの分散などに<span class="term">使います。</span>方式ごとの動作を確認し、目的に応じて構成を<span class="term">選びます。</span>
+</p>
+</div>
+<div class="explain-card">
+<h3><span class="label-part">移行と設定</span>
+</h3>
+<p>AWS DMSでDB間のデータ移行を支援できます。エンジン間のスキーマ・機能差、接続、移行中の変更、切り替えは別途<span class="term">確認します。</span>
+</p>
+</div>
+</div>
+<aside class="note "><strong><span class="label-part">補足：Aurora DSQLは、</span> <span class="label-part">別のDBサービス</span></strong>トランスクリプトにあるAurora DSQLは、PostgreSQL互換の<span class="term">サーバーレス</span>分散SQLサービスです。通常のAuroraクラスターの「第3のエンジン」として同じ構成・制限を<span class="term">当てはめません。</span>
+</aside>
+<p>RDSやAuroraでも、データへの権限や<span class="term">バックアップ</span>の保持期間を<span class="term">利用者</span>が<span class="term">設定します。</span>マネージドであることは、<span class="term">アプリケーション</span>設計や復旧確認が不要になるという意味<span class="term">ではありません。</span>
+</p><a class="source" href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html">公式資料：<span class="term">Amazon</span> RDS ↗</a><a class="source" href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_AuroraOverview.html">公式資料：Auroraの基本 ↗</a><a class="source" href="https://docs.aws.amazon.com/aurora-dsql/latest/userguide/what-is-aurora-dsql.html">公式資料：<span class="term">Aurora</span> DSQL ↗</a>
+</section>
+<section id="dynamodb" class="chapter" aria-labelledby="dynamodb-title">
+<div class="section-title"><span class="section-number">03</span>
+<h2 id="dynamodb-title"><span class="heading-part">アクセス方法から、</span> <span class="heading-part">キーを設計する</span>
+</h2>
+</div>
+<p><strong><span class="term">Amazon</span> <span class="term">DynamoDB</span></strong>は、キー・バリューとドキュメントを扱うマネージドNoSQLデータベースです。テーブルの中に項目（Item）を保存し、属性<span class="term">（Attribute）</span>を持たせます。主キーに必要な属性以外は、項目ごとに<span class="term">異なる</span>属性を<span class="term">持てます。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">注文番号をキーに、</span> <span class="label-part">注文の項目を取得する</span></strong><span class="diagram-kind">ITEM <span class="term">MODEL</span></span>
+</div>
+<div class="diagram-body">
+<div class="object-example"><strong>テーブル：<span class="term">Orders</span></strong>
+<dl>
+<dt>主キー
+</dt>
+<dd><span class="term">OrderNumber</span> = O101
+</dd>
+<dt>属性
+</dt>
+<dd><span class="term">ItemName</span> = Book、<span class="term">Quantity</span> = 2
+</dd>
+<dt>別の項目
+</dt>
+<dd><span class="term">OrderNumber</span> = O102。必要ならGift属性も持つ
+</dd>
+</dl>
+</div>
+</div>
+<figcaption>主キーが<span class="term">パーティションキー</span>のみの例です。<span class="term">パーティションキー</span>＋<span class="term">ソートキー</span>の構成もあります。すべての項目には、定義された主キーが<span class="term">必要です。</span>
+</figcaption>
+</figure>
+<div class="table-scroll" tabindex="0" role="region" aria-label="検索方法を使い分ける。狭い画面では横にスクロールできます">
+<table>
+<caption>検索方法を<span class="term">使い分ける</span>
+</caption>
+<thead>
+<tr>
+<th scope="col">操作
+</th>
+<th scope="col">特徴
+</th>
+<th scope="col">設計で考えること
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row"><span class="term">GetItem</span>
+</th>
+<td>主キーを指定して1項目を取得
+</td>
+<td>直接取り出すキーを決める
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Query</span>
+</th>
+<td><span class="term">パーティションキー</span>の等価条件などで取得
+</td>
+<td>アクセスパターンと索引を先に考える
+</td>
+</tr>
+<tr>
+<th scope="row">Scan
+</th>
+<td>テーブルや索引を広く読み、条件で絞る
+</td>
+<td>大規模な走査は読み取り負荷・費用を考える
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<aside class="note important"><strong><span class="label-part">重要：NoSQLは、</span> <span class="label-part">関係を持てない意味ではない</span></strong>アプリでデータを<span class="term">関連付けられます</span>が、RDBと同じJOIN・外部キー制約を前提に設計しません。DynamoDBにも<span class="term">トランザクション</span>はあります。必要な読み書き・整合性・コストから<span class="term">選びます。</span>
+</aside>
+<p>コンソール・CLI・SDKなどからAPIを使って<span class="term">操作できます。</span>SQL互換のPartiQLも<span class="term">利用できます</span>が、リレーショナルDBと同じ機能がすべて使えるわけ<span class="term">ではありません。</span>
+</p><a class="source" href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html">公式資料：Queryの条件 ↗</a><a class="source" href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.html">公式資料：DynamoDBのPartiQL ↗</a>
+</section>
+<section id="application" class="chapter" aria-labelledby="application-title">
+<div class="section-title"><span class="section-number">04</span>
+<h2 id="application-title"><span class="heading-part">接続の許可と、</span> <span class="heading-part">データの操作を分ける</span>
+</h2>
+</div>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">アプリケーションが、</span> <span class="label-part">DBへ接続する</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service neutral"><strong><span class="label-part">利用者</span></strong><small><span class="label-part">Web画面から要求</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service compute"><strong><span class="label-part">EC2のアプリ</span></strong><small><span class="label-part">DBへ接続してクエリ</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service data"><strong><span class="label-part">RDS MySQL</span></strong><small><span class="label-part">データを保存・検索</span></small>
+</div>
+</div>
+</div>
+<figcaption><span class="term">利用者</span>がDBへ直接ログインする構成<span class="term">ではありません。</span>アプリがDBエンドポイントへ接続し、結果を<span class="term">利用者</span>へ<span class="term">返します。</span>
+</figcaption>
+</figure>
+<ol class="walkthrough">
+<li>
+<div><strong>配置と通信を用意する</strong>
+<p>DB<span class="term">サブネット</span>やSGを<span class="term">設定します。</span>MySQLの標準ポートは3306。アプリのSGから必要なDBポートへの接続だけを許可する、などの範囲を<span class="term">決めます。</span>
+</p>
+</div>
+</li>
+<li>
+<div><strong>接続と認証を<span class="term">設定する</span></strong>
+<p>RDSのエンドポイント、ポート、DB名、認証情報をアプリに渡します。<span class="term">ネットワーク</span>の許可と、DBのユーザー権限は別です。認証情報はソースコードへ直接埋め込まないようにします。
+</p>
+</div>
+</li>
+<li>
+<div><strong>テーブルと操作を用意する</strong>
+<p>リレーショナルDBでは主キー・外部キー・型を定義し、SQLを<span class="term">実行します。</span>DynamoDBではテーブルのキーを定義し、項目を保存して<span class="term">取得します。</span>操作方法の違いを<span class="term">確認します。</span>
+</p>
+</div>
+</li>
+</ol>
+<aside class="note "><strong><span class="label-part">補足：コンソールの操作より、</span> <span class="label-part">役割を覚える</span></strong>教材のデモで重要なのは、作成 → 接続 → データ定義 → 保存・検索の順序です。ボタンの位置や選べるバージョンは変わるため、実際の操作は最新の公式手順を<span class="term">確認します。</span>
+</aside>
+</section>
+<section id="cache" class="chapter" aria-labelledby="cache-title">
+<div class="section-title"><span class="section-number">05</span>
+<h2 id="cache-title"><span class="heading-part">よく読むデータを、</span> <span class="heading-part">一時保存して速くする</span>
+</h2>
+</div>
+<p><strong><span class="term">Amazon</span> <span class="term">ElastiCache</span></strong>は、<span class="term">Valkey</span>・<span class="term">Redis</span> OSS・Memcachedなどのインメモリ基盤を<span class="term">提供します。</span>データをメモリから素早く読み、DBの繰り返し読み取りを減らす用途などに<span class="term">使います。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">アプリが、</span> <span class="label-part">キャッシュとDBを使い分ける</span></strong><span class="diagram-kind"><span class="term">CACHE</span> <span class="term">ASIDE</span></span>
+</div>
+<div class="diagram-body diagram-scroll" tabindex="0" role="region" aria-label="図の横スクロール領域">
+<svg class="svg-diagram" viewBox="0 0 900 450" role="img" aria-labelledby="cache-name cache-desc">
+<title id="cache-name">アプリケーションがキャッシュとDBを使い分けるキャッシュアサイド
+</title>
+<desc id="cache-desc">アプリは最初にElastiCacheを確認。ヒットなら返されたデータを利用し、ミスならRDSを読みます。得られた結果はアプリがキャッシュへ保存します。DBからキャッシュへ直接送る図ではありません。
+</desc>
+<defs>
+<marker id="cache-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+<path d="M0 0 L10 5 L0 10 Z" fill="#23658a"/>
+</marker>
+<marker id="cache-response" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+<path d="M0 0 L10 5 L0 10 Z" fill="#216b51"/>
+</marker>
+</defs>
+<rect class="compute-box" x="30" y="160" width="245" height="138" rx="12"/>
+<text x="152" y="202" text-anchor="middle" class="svg-title">アプリケーション
+</text>
+<text x="152" y="234" text-anchor="middle">EC2などで実行
+</text>
+<text x="152" y="264" text-anchor="middle">取得・再保存を制御
+</text>
+<rect class="data-box" x="550" y="45" width="300" height="120" rx="12"/>
+<text x="700" y="86" text-anchor="middle" class="svg-title">Amazon ElastiCache
+</text>
+<text x="700" y="119" text-anchor="middle">よく読むデータを保持
+</text>
+<rect class="data-box" x="550" y="298" width="300" height="120" rx="12"/>
+<text x="700" y="339" text-anchor="middle" class="svg-title">Amazon RDS
+</text>
+<text x="700" y="372" text-anchor="middle">データの原本を保持
+</text>
+<path class="route-line" d="M275 188 H395 Q405 188 405 178 V86 Q405 76 415 76 H542" marker-end="url(#cache-arrow)"/>
+<path class="return-line" d="M550 138 H467 Q457 138 457 148 V213 Q457 223 447 223 H283" marker-end="url(#cache-response)"/>
+<path class="route-line" d="M275 259 H395 Q405 259 405 269 V320 Q405 330 415 330 H542" marker-end="url(#cache-arrow)"/>
+<path class="return-line" d="M550 391 H360 Q350 391 350 381 V297 Q350 287 340 287 H283" marker-end="url(#cache-response)"/>
+<text x="220" y="63" text-anchor="middle">① キャッシュを確認
+</text>
+<text x="700" y="210" text-anchor="middle">② ヒット／ミスを返す
+</text>
+<text x="190" y="352" text-anchor="middle">③ ミスならDBを読む
+</text>
+<text x="190" y="414" text-anchor="middle">④ 結果をアプリが取得
+</text>
+</svg>
+</div>
+<figcaption><span class="term">キャッシュ</span>アサイドの例。ヒットなら<span class="term">キャッシュ</span>の結果で応答し、ミスならDBを読みます。得た結果はアプリが<span class="term">キャッシュ</span>へ保存し、その後の読み取りに<span class="term">使います。</span>
+</figcaption>
+</figure>
+<aside class="note important"><strong><span class="label-part">重要：キャッシュは、</span> <span class="label-part">置くだけでは働かない</span></strong>この方式ではアプリに取得・保存・期限切れ時の処理が<span class="term">必要です。</span>原本の更新時に無効化・<span class="term">更新する</span>方法やTTLを決めないと、古い値が返る<span class="term">場合があります。</span><span class="term">キャッシュ</span>を唯一の原本や<span class="term">バックアップ</span>の<span class="term">代わりにしません。</span>
+</aside>
+<p><strong><span class="term">DynamoDB</span> <span class="term">Accelerator</span>（DAX）</strong>は、DynamoDBの読み取りを高速化するための<span class="term">キャッシュ</span>です。ElastiCacheの汎用的な利用とは対象が<span class="term">異なります。</span><span class="term">キャッシュ</span>できる読み取りや整合性の条件も<span class="term">確認します。</span>
+</p><a class="source" href="https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.html">公式資料：<span class="term">ElastiCache</span> ↗</a><a class="source" href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.html">公式資料：<span class="term">DynamoDB</span> <span class="term">Accelerator</span> ↗</a>
+</section>
+<section id="purpose" class="chapter" aria-labelledby="purpose-title">
+<div class="section-title"><span class="section-number">06</span>
+<h2 id="purpose-title"><span class="heading-part">データの特性と、</span> <span class="heading-part">復旧の目的から選ぶ</span>
+</h2>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="目的に応じたサービス。狭い画面では横にスクロールできます">
+<table>
+<caption>目的に応じたサービス
+</caption>
+<thead>
+<tr>
+<th scope="col">サービス
+</th>
+<th scope="col">扱うもの・役割
+</th>
+<th scope="col">利用例
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row"><span class="term">Amazon</span> <span class="term">DocumentDB</span>
+</th>
+<td>MongoDB互換のドキュメントDB
+</td>
+<td>JSON形式に近いデータを扱うアプリ
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Amazon</span> <span class="term">Neptune</span>
+</th>
+<td>関係をグラフとして扱うDB
+</td>
+<td>つながりの探索・不正の関係分析
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Amazon</span> <span class="term">Managed</span> <span class="term">Blockchain</span>
+</th>
+<td>ブロックチェーンの利用基盤
+</td>
+<td>共有台帳やブロックチェーンへのアクセス
+</td>
+</tr>
+<tr>
+<th scope="row">AWS <span class="term">Backup</span>
+</th>
+<td>対応リソースの<span class="term">バックアップ</span>を集中管理
+</td>
+<td>保存ポリシー・保持期間・復元の管理
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>専用DBは、名前の暗記より「何を検索・<span class="term">更新する</span>か」を先に<span class="term">考えます。</span>DocumentDBはMongoDB互換ですが、使用するバージョンや機能の互換性を<span class="term">確認します。</span>DynamoDBもドキュメント型の属性を扱うため、保存形式だけでサービスが1つに決まるわけ<span class="term">ではありません。</span>
+</p>
+<p><strong>AWS <span class="term">Backup</span></strong>では、<span class="term">対応する</span>AWSリソースや一部の<span class="term">オンプレミス</span>環境の保存をまとめて<span class="term">管理できます。</span>対象・スケジュール・保持期間・保存先を<span class="term">設定します。</span>対象外のリソースまで自動保護されるとは<span class="term">考えません。</span>
+</p>
+<aside class="note important"><strong><span class="label-part">重要：可用性とバックアップは、</span> <span class="label-part">目的が違う</span></strong>複製は障害時にサービスを継続するため、<span class="term">バックアップ</span>は過去の状態から復旧するための仕組みです。誤った更新が複製先にも伝わる場合があるため、保存時点・保持期間と、復元できることを<span class="term">確認します。</span>
+</aside><a class="source" href="https://docs.aws.amazon.com/documentdb/latest/devguide/compatibility.html">公式資料：DocumentDBの互換性 ↗</a><a class="source" href="https://docs.aws.amazon.com/aws-backup/latest/devguide/whatisbackup.html">公式資料：AWS <span class="term">Backup</span> ↗</a>
+</section>
+<section id="review" class="chapter" aria-labelledby="review-title">
+<div class="section-title"><span class="section-number">07</span>
+<h2 id="review-title"><span class="heading-part">重要ポイントと、</span> <span class="heading-part">理解の確認</span>
+</h2>
+</div>
+<ul class="summary-list">
+<li>リレーショナルDBは、テーブルとキーで関係を管理しSQLで<span class="term">検索する。</span>
+</li>
+<li>RDS・Auroraは運用をAWSに任せる範囲を増やす。データ・権限・設定の責任は残る。
+</li>
+<li>DynamoDBはキーとアクセスパターンから<span class="term">設計する。</span>ScanとQueryは<span class="term">異なる。</span>
+</li>
+<li><span class="term">キャッシュ</span>は高速化、<span class="term">バックアップ</span>は復旧。原本・複製・保存時点を分けて考える。
+</li>
+</ul>
+<div class="review-grid">
+<details>
+<summary>Q1. 注文と<span class="term">利用者</span>を別のテーブルに分け、つなぐには？
+</summary>
+<p><span class="term">利用者</span>の主キーを注文から外部キーで参照し、SQLのJOINなどで必要な情報を<span class="term">取得します。</span>
+</p>
+</details>
+<details>
+<summary>Q2. DynamoDBのQueryとScanは同じ？
+</summary>
+<p><span class="term">異なります。</span>Queryは<span class="term">パーティションキー</span>の条件などを使い、Scanは広く読み取ります。
+</p>
+</details>
+<details>
+<summary>Q3. ElastiCacheを作れば、アプリのDB読取りは自動で減る？
+</summary>
+<p>この<span class="term">キャッシュ</span>アサイド方式では、アプリ側に読み取り・保存・期限や更新への対応が<span class="term">必要です。</span>
+</p>
+</details>
+<details>
+<summary>Q4. データを複製していれば、過去の誤更新も戻せる？
+</summary>
+<p>複製にも誤更新が伝わる<span class="term">場合があります。</span>過去の時点から<span class="term">復元する</span><span class="term">バックアップ</span>を別に<span class="term">設計します。</span>
+</p>
+</details>
+</div>
+</section>
+<section id="sources" class="chapter" aria-labelledby="sources-title">
+<div class="section-title"><span class="section-number">08</span>
+<h2 id="sources-title"><span class="heading-part">確認に使った、</span> <span class="heading-part">公式資料</span>
+</h2>
+</div>
+<p class="small">元データ：<span class="term">scripts</span>/<span class="term">module7</span>.txt。提供されたトランスクリプトを意味のまとまりで再構成し、誤解しやすい箇所を以下のAWS公式資料で確認しました（2026年10月6日）。実際の操作・仕様・料金は最新版を<span class="term">確認してください。</span>
+</p>
+<ul class="sources-list">
+<li><a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html">RDSの基本</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_AuroraOverview.html">Auroraの概要</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/aurora-dsql/latest/userguide/what-is-aurora-dsql.html"><span class="term">Aurora</span> DSQL</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html"><span class="term">DynamoDB</span> <span class="term">Query</span></a>
+</li>
+<li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.html"><span class="term">PartiQL</span></a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.html"><span class="term">ElastiCache</span></a>
+</li>
+<li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.html">DAX</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/dms/latest/userguide/Welcome.html">DMSによる移行</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/documentdb/latest/devguide/compatibility.html">DocumentDBの互換性</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/aws-backup/latest/devguide/whatisbackup.html">AWS <span class="term">Backup</span></a>
+</li>
+</ul>
+</section>
+<nav class="module-nav" aria-label="モジュール間の移動"><a href="module-06.html">← <span class="term">Previous</span> · <span class="term">Module</span> 6</a><a href="../index.html">Home</a><span class="unavailable" aria-disabled="true">Next · 未作成 →</span>
+</nav>
+<footer class="footer">AWS <span class="term">STUDY</span> <span class="term">NOTES</span> / <span class="term">MODULE</span> 07<br>個人学習用の補助教材です。AWS公式教材<span class="term">ではありません。</span>図は概念の理解を目的とし、完全な構築手順を示すもの<span class="term">ではありません。</span>
+</footer>
+</main>
+</div>
+</body>
+</html>

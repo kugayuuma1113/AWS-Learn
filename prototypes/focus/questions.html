@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Module 2 / 03 考えてから、 役割を確かめる</title>
+    <link rel="stylesheet" href="../../assets/css/style.css?v=20261006-4">
+    <link rel="stylesheet" href="../../assets/css/focus.css?v=20261006-focus-6">
+  </head>
+  <body class="focus">
+    <a class="skip-link" href="#main">本文へスキップ</a>
+    <header class="site-header"><a class="brand" href="../../index.html"><span class="brand-mark">a /</span> AWS STUDY NOTES</a><a class="header-link" href="index.html">3案を比較</a></header>
+    <main id="main" class="focus-main question-page">
+      <div class="breadcrumb"><a href="index.html">見せ方の比較</a> / サンプル 03</div>
+      <nav class="focus-nav" aria-label="同じテーマの見せ方を比較"><a href="annotated.html">01 図への注釈</a><a href="evolution.html">02 構成の変化</a><a href="questions.html" aria-current="page">03 問いから確認</a></nav>
+      <header class="focus-intro">
+        <p class="eyebrow">MODULE 02 · 03</p>
+        <h1><span class="part">考えてから、</span> <span class="part">役割を確かめる</span></h1>
+        <p class="lead">答えを読む前に、構成図と問いを見て考えてみてください。サービスの役割を混同していないか、3つの問いで確かめます。</p>
+        <div class="focus-guide">
+          <b>読み方</b>
+          <p>問い → 図 → 自分の判断 → 答えと理由、の<span class="part">順に読みます。</span></p>
+        </div>
+      </header>
+      <section class="question" aria-labelledby="q1-title">
+        <div class="question-top">
+          <div>
+            <p class="question-kicker">QUESTION 01</p>
+            <h2 id="q1-title"><span class="part">2台にすれば、</span> <span class="part">偏りはなくなる？</span></h2>
+            <p class="question-prompt">EC2を追加しました。利用者の接続先を変えずに、2台で処理を分担<span class="part">できるでしょうか？</span></p>
+            <ul class="choices">
+              <li>台数が増えれば、自動的に均等になる</li>
+              <li><span class="term">リクエスト</span>を振り分ける仕組みが必要</li>
+            </ul>
+          </div>
+          <figure class="question-image">
+            <div class="client-pill">ユーザー</div>
+            <div class="target-a-route"><span aria-hidden="true"></span><small>元のEC2へ</small></div>
+            <div class="machine-pair">
+              <div class="machine busy"><strong>EC2 A</strong><small>アプリを実行</small><span class="load-tag hot">負荷が集中</span></div>
+              <div class="machine idle"><strong>EC2 B</strong><small>受付なし</small><span class="load-tag">余力がある</span></div>
+            </div>
+            <figcaption>EC2は2台。<span class="term">リクエスト</span>はAへ集中。</figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>答えと理由を確認する</summary>
+          <div class="answer">
+            <h3><span class="part">振り分ける仕組みが</span> <span class="part">必要です。</span></h3>
+            <p>ELBを共通の入口にし、複数のEC2へ<span class="part">分散します。</span>台数の追加は<span class="term">Auto Scaling</span>の役割、送る先を決めるのは<span class="part">ELBの役割です。</span></p>
+            <div class="role-node network"><strong><span class="role-name">ELB / ALB</span></strong><small>どこへ送るかを決める</small></div>
+          </div>
+        </details>
+      </section>
+      <section class="question" aria-labelledby="q2-title">
+        <div class="question-top">
+          <div>
+            <p class="question-kicker">QUESTION 02</p>
+            <h2 id="q2-title"><span class="part">CPUが上がった。</span> <span class="part">誰が台数を変える？</span></h2>
+            <p class="question-prompt">CloudWatchで状態を観測できました。設定した<span class="term">ポリシー</span>に従ってEC2を増減するのは、どのサービスでしょうか？</p>
+            <ul class="choices">
+              <li>CloudWatch</li>
+              <li><span class="term">EC2 Auto Scaling</span></li>
+              <li>ELB</li>
+            </ul>
+          </div>
+          <figure class="question-image">
+            <div class="role-node monitoring"><strong><span class="role-name">CloudWatch</span></strong><small>EC2のCPUを観測</small></div>
+            <div class="path-label"><span aria-hidden="true">↓</span>観測した結果</div>
+            <div class="role-node neutral"><strong><span class="role-name">？</span></strong><small>台数を変える役割</small></div>
+            <figcaption>観測と台数の制御を分けて考える。</figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>答えと理由を確認する</summary>
+          <div class="answer">
+            <h3><span class="part">EC2 Auto Scalingが</span> <span class="part">台数を調整します。</span></h3>
+            <p>CloudWatchは<span class="term">メトリクス</span>と<span class="term">アラーム</span>を提供します。<span class="term">Auto Scaling</span>はそれらを用い、<span class="term">ポリシー</span>に沿ってEC2の台数を増減します。ELBは、<span class="term">リクエスト</span>を<span class="part">分散します。</span></p>
+            <p class="answer-fact">台数が変わると負荷も変化します。その状態を再び観測することで、<span class="part">制御が続きます。</span></p>
+          </div>
+        </details>
+      </section>
+      <section class="question" aria-labelledby="q3-title">
+        <div class="question-top">
+          <div>
+            <p class="question-kicker">QUESTION 03</p>
+            <h2 id="q3-title"><span class="part">新しいEC2は、</span> <span class="part">すぐ受付できる？</span></h2>
+            <p class="question-prompt"><span class="term">Auto Scaling</span>が新しいEC2を起動しました。何を確かめれば、処理を任せられるでしょうか？</p>
+            <ul class="choices">
+              <li>起動すれば、その瞬間から同じ量を処理できる</li>
+              <li>アプリの準備と、受付できる状態を確かめる</li>
+            </ul>
+          </div>
+          <figure class="question-image">
+            <div class="ready-line"><span>EC2を起動</span><span class="path-arrow" aria-hidden="true">↓</span><span>準備と状態の確認</span><span class="path-arrow" aria-hidden="true">↓</span><span>リクエストの分散先へ</span></div>
+            <figcaption>起動と、受付可能な状態は分けて考える。</figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>答えと理由を確認する</summary>
+          <div class="answer">
+            <h3><span class="part">起動・準備・連携を</span> <span class="part">考えます。</span></h3>
+            <p><span class="term">Auto Scaling</span><span class="term">グループ</span>とELBを連携させれば、追加したEC2は自動で<span class="term">ターゲット</span><span class="part">登録されます。</span>ELBは<span class="term">ヘルスチェック</span>で状態を確認し、通常は正常な<span class="term">ターゲット</span><span class="part">へ送ります。</span></p>
+            <p>起動と<span class="term">ウォームアップ</span>には<span class="part">時間が必要です。</span><span class="term">ウォームアップ</span>は<span class="term">スケーリング</span>判断で新しいEC2を扱うための時間で、ELBの<span class="term">ヘルスチェック</span>とは別の仕組みです。</p>
+          </div>
+        </details>
+      </section>
+      <section class="reflection">
+        <h2><span class="part">図を見ずに、</span> <span class="part">3つの役割を言える？</span></h2>
+        <p>状態を観測する。台数を変える。<span class="term">リクエスト</span>を分ける。それぞれがどのサービスか、もう一度<span class="part">説明してみてください。</span></p>
+        <details>
+          <summary>役割を短く確認する</summary>
+          <p><strong>CloudWatch</strong>は観測。<strong><span class="term">EC2 Auto Scaling</span></strong>は増減。<strong>ELB</strong>は分散。1つのサービスだけで3つすべてを担当する<span class="part">わけではありません。</span></p>
+        </details>
+      </section>
+      <section class="focus-foot" aria-labelledby="conditions-title">
+        <div class="focus-note">
+          <h2 id="conditions-title"><span class="part">増減には、</span> <span class="part">条件がある</span></h2>
+          <p>学習用の設定例は、最小2台・希望2台・最大6台、平均CPUの目標50%です。台数の増減は<span class="term">ポリシー</span>と上下限に従い、起動・<span class="term">ウォームアップ</span>には<span class="part">時間がかかります。</span>CPUが上がった瞬間に、必ず台数が増えるという意味ではありません。</p>
+        </div>
+        <details>
+          <summary>確認したAWS公式資料</summary>
+          <ul class="sources-list">
+            <li><a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html"><span class="term">ターゲット</span>追跡：<span class="term">メトリクス</span>・目標値・<span class="term">ウォームアップ</span></a></li>
+            <li><a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/autoscaling-load-balancer.html"><span class="term">Auto Scaling</span>とELB：登録・解除と連携</a></li>
+          </ul>
+          <p>2026年10月6日に確認。Module 2のトランスクリプトをもとに再編集しています。図は概念図で、VPC・AZ・セキュリティ設定などは<span class="part">省略しています。</span></p>
+        </details>
+      </section>
+      <div class="focus-end"><a href="index.html">← 3案の比較へ</a><a href="../../modules/module-02.html#scaling">Module 2の既存本文へ</a></div>
+      <footer class="footer">同じテーマを異なる見せ方で比べる試作です。Module 2全体への採用は、比較後に決めます。</footer>
+    </main>
+  </body>
+</html>

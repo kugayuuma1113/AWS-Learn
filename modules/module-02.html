@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="EC2、仮想化、スケーリング、CloudWatch、ELB、SQS、SNSのつながりを図解で理解するModule 2教材。">
+    <title>Module 2 | コンピューティングと、変化に強いシステム</title>
+    <link rel="stylesheet" href="../assets/css/style.css?v=20261006-5">
+    <link rel="stylesheet" href="../assets/css/curriculum.css?v=20261006-curriculum-5">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">本文へスキップ</a>
+    <header class="site-header"><a class="brand" href="../index.html"><span class="brand-mark">a /</span>AWS STUDY NOTES</a><span class="header-meta">SKILL BUILDER · VISUAL LEARNING</span></header>
+    <div class="shell">
+      <aside class="toc">
+        <p class="eyebrow toc-title">IN THIS MODULE</p>
+        <nav aria-label="このページの目次">
+          <ol>
+            <li><a href="#ec2"><span>01</span>EC2と仮想化</a></li>
+            <li><a href="#capacity"><span>02</span>性能とコストを選ぶ</a></li>
+            <li><a href="#api"><span>03</span>AWSを操作する</a></li>
+            <li><a href="#scaling"><span>04</span>増やす・減らす</a></li>
+            <li><a href="#availability"><span>05</span>分散して、止まりにくく</a></li>
+            <li><a href="#messaging"><span>06</span>メッセージでつなぐ</a></li>
+            <li><a href="#review"><span>07</span>重要ポイントと復習</a></li>
+            <li><a href="#sources"><span>08</span>公式資料</a></li>
+          </ol>
+        </nav>
+        <a class="toc-home" href="../index.html">← 学習ホームへ</a>
+      </aside>
+      <main id="main" class="article">
+        <div class="breadcrumb"><a href="../index.html">Home</a> / <span class="term">Module</span> 02</div>
+        <header class="hero">
+          <p class="eyebrow"><span class="term">MODULE</span> 02 / <span class="term">COMPUTE</span> &amp; <span class="term">ARCHITECTURE</span></p>
+          <h1><span class="heading-part">コンピューティングと、</span> <span class="heading-part">変化に強いシステム</span></h1>
+          <p class="lead">サーバーを用意するだけでは、システムは完成しません。<br>処理能力を選び、需要に合わせて増減し、障害の影響を小さくする。EC2を出発点に、その設計をつなげて<span class="term">学びます。</span></p>
+          <div class="hero-meta"><span class="tag">7つの学習セクション</span><span class="tag">図解＋比較表＋復習</span><span class="tag">公式資料確認：2026.10.04</span></div>
+          <div class="learning-goals">
+            <h2>このModuleで学ぶこと</h2>
+            <div class="goal-grid">
+              <p><b>01</b>EC2の仕組みと性能・料金の選び方</p>
+              <p><b>02</b><span class="term">Console</span> / CLI / SDKと<span class="term">APIの関係</span></p>
+              <p><b>03</b>監視・自動増減・負荷分散の役割分担</p>
+              <p><b>04</b>SQS / SNSでサービスを疎結合にする</p>
+            </div>
+          </div>
+        </header>
+        <section id="ec2" class="chapter" aria-labelledby="ec2-title">
+          <div class="section-title">
+            <span class="section-number">01</span>
+            <h2 id="ec2-title"><span class="heading-part">EC2は、</span> <span class="heading-part">処理を動かす土台</span></h2>
+          </div>
+          <p><strong><span class="term">Amazon</span> EC2<span class="term">（Elastic</span> <span class="term">Compute</span> <span class="term">Cloud）</span></strong>は、必要なときにサーバーの処理能力を利用できるサービスです。起動した1台のサーバーを<strong><span class="term">インスタンス</span></strong>と<span class="term">呼びます。</span>LinuxやWindowsを選び、Web<span class="term">アプリケーション、</span>データベース、バッチ処理などを<span class="term">実行できます。</span></p>
+          <p>物理サーバーの購入・設置を待たずに起動でき、必要がなくなれば停止・終了できます。OSや<span class="term">アプリケーション</span>の設定、<span class="term">ネットワーク</span>のアクセス制御は<span class="term">利用者</span>が<span class="term">行います。</span></p>
+          <figure class="diagram">
+            <div class="diagram-head"><strong><span class="label-part">物理サーバーを共有し、</span> <span class="label-part">仮想サーバーを分離する</span></strong><span class="diagram-kind"><span class="term">HIERARCHY</span></span></div>
+            <div class="diagram-body">
+              <div class="host">
+                <p class="host-label">物理サーバー · AWSが管理</p>
+                <div class="vm-grid">
+                  <div class="service compute"><strong>EC2<span class="term">インスタンス</span> A</strong><small><span class="term">利用者</span>A · OS＋アプリ</small></div>
+                  <div class="service compute"><strong>EC2<span class="term">インスタンス</span> B</strong><small><span class="term">利用者</span>B · OS＋アプリ</small></div>
+                  <div class="service compute"><strong>EC2<span class="term">インスタンス</span> C</strong><small><span class="term">利用者</span>B · OS＋アプリ</small></div>
+                </div>
+                <div class="hypervisor"><strong><span class="term">ハイパーバイザー</span></strong>· CPUやメモリなどの割り当てと分離</div>
+              </div>
+              <div class="responsibility"><span>AWS：物理基盤・仮想化基盤を管理</span><span><span class="term">利用者</span>：ゲストOS・アプリを管理</span></div>
+            </div>
+            <figcaption>これは仮想化の概念図です。1台の物理サーバー上に複数の仮想マシンを動かし、別々の<span class="term">利用者</span>が基盤を共有する形を「マルチテナント」と<span class="term">呼びます。</span></figcaption>
+          </figure>
+          <div class="two-col">
+            <div class="explain-card">
+              <h3>仮想化</h3>
+              <p>物理的なCPUやメモリを、独立した複数のコンピューターとして扱えるようにする技術。各<span class="term">インスタンス</span>は自分のOSやアプリを<span class="term">実行します。</span></p>
+            </div>
+            <div class="explain-card">
+              <h3>マルチテナント</h3>
+              <p>複数の<span class="term">利用者</span>が物理基盤を共有する形。共有していても、ほかの<span class="term">利用者</span>のOSやデータを自由に見られるわけ<span class="term">ではありません。</span></p>
+            </div>
+          </div>
+          <aside class="note"><strong>補足：すべてのEC2が同じ構造ではない</strong>多くのEC2はNitro Systemを基盤とし、専用ハードウェアとハイパーバイザーを<span class="term">組み合わせます。</span>ベアメタルや専有ホストもあるため、「EC2は必ず他社と物理サーバーを共有する」とは限りません。<a class="source" href="https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-nitro-instances.html">公式資料：<span class="term">Nitro</span> System上の<span class="term">インスタンス</span> ↗</a></aside>
+        </section>
+        <section id="capacity" class="chapter" aria-labelledby="capacity-title">
+          <div class="section-title">
+            <span class="section-number">02</span>
+            <h2 id="capacity-title"><span class="heading-part">性能とコストを、</span> <span class="heading-part">用途から選ぶ</span></h2>
+          </div>
+          <p>最初に考えるのは「何のリソースが必要か」です。CPUが必要な処理と、大量のデータをメモリに載せる処理では、適したサーバーが<span class="term">違います。</span><strong>用途に合う系統を選び、その中でサイズを決める</strong>と<span class="term">整理できます。</span></p>
+          <div class="naming" aria-label="インスタンスタイプm5.largeは、ファミリーm5とサイズlargeからなる">
+            <div class="name-piece"><code>m5</code><small><span class="label-part">ファミリー</span> · <span class="label-part">系統＋世代</span></small></div>
+            <span class="name-dot" aria-hidden="true">.</span>
+            <div class="name-piece"><code>large</code><small><span class="label-part">サイズ</span> · <span class="label-part">リソース量</span></small></div>
+          </div>
+          <p class="small">例：<code>m5.large</code>全体が<span class="term">インスタンス</span>タイプです。「汎用」などは用途別のカテゴリで、m5などが具体的なファミリー。命名にはプロセッサなどを示す追加文字が付く場合もあります。上の例は最新世代の推奨<span class="term">ではありません。</span></p>
+          <div class="table-scroll" tabindex="0" role="region" aria-label="インスタンスカテゴリ比較表。狭い画面では横にスクロールできます">
+            <table>
+              <caption>用途別に見る、主な5カテゴリ</caption>
+              <thead>
+                <tr>
+                  <th scope="col">カテゴリ</th>
+                  <th scope="col">重視するリソース</th>
+                  <th scope="col">適した処理の例</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">汎用</th>
+                  <td>CPU・メモリ・<span class="term">ネットワーク</span>のバランス</td>
+                  <td>Webサーバー、開発環境</td>
+                </tr>
+                <tr>
+                  <th scope="row"><span class="label-part">コンピューティング</span><span class="label-part">最適化</span></th>
+                  <td>CPUの処理性能</td>
+                  <td>計算量の多いバッチ、科学計算</td>
+                </tr>
+                <tr>
+                  <th scope="row"><span class="label-part">メモリ</span><span class="label-part">最適化</span></th>
+                  <td>大容量メモリ</td>
+                  <td>インメモリDB、大規模データ処理</td>
+                </tr>
+                <tr>
+                  <th scope="row"><span class="label-part">高速</span><span class="label-part">コンピューティング</span></th>
+                  <td>GPUなどのアクセラレーター</td>
+                  <td>機械学習、グラフィックス処理</td>
+                </tr>
+                <tr>
+                  <th scope="row"><span class="label-part">ストレージ</span><span class="label-part">最適化</span></th>
+                  <td>ローカル<span class="term">ストレージ</span>のI/O性能</td>
+                  <td>大量の読み書き、データ分析</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <a class="source" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html">公式資料：<span class="term">インスタンス</span>タイプと各カテゴリ ↗</a>
+          <p class="space-before">同じファミリーでも、サイズによってCPU・メモリなどの量が<span class="term">変わります。</span>大きなサイズは必要な能力を増やせますが、料金も増えるため、<strong>実際の負荷を測りながら見直す</strong>ことが大切です。<span class="term">ストレージ</span>の構成はタイプによって異なり、EBS（EC2で使う永続<span class="term">ストレージ）</span>の容量は別に<span class="term">設定できます。</span></p>
+          <h3>料金は「使い方」と「契約」で選ぶ</h3>
+          <p>以下は料金・購入方法の代表例です。専有ホストは、割引方式というより<strong>物理サーバーを専有する配置方法</strong>であり、独立した選択軸です。</p>
+          <div class="table-scroll" tabindex="0" role="region" aria-label="EC2購入方法比較表">
+            <table>
+              <caption>利用パターンと購入方法</caption>
+              <thead>
+                <tr>
+                  <th scope="col">選択肢</th>
+                  <th scope="col">考え方</th>
+                  <th scope="col">向いている状況 / 注意点</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">オンデマンド</th>
+                  <td>長期の利用コミットなしで使う</td>
+                  <td>試作、短期利用、需要が読めない処理。課金単位はOSなどで<span class="term">異なる</span></td>
+                </tr>
+                <tr>
+                  <th scope="row"><span class="term">Savings</span> <span class="term">Plans</span></th>
+                  <td>1年・3年の一定利用額（$/時）を約束し、対象利用を割引</td>
+                  <td>安定した利用。<span class="term">Compute</span> <span class="term">Savings</span> PlansはEC2に加えLambda・Fargateにも適用。EC2 <span class="term">Instance</span> <span class="term">Savings</span> Plansは対象が限定される</td>
+                </tr>
+                <tr>
+                  <th scope="row"><span class="term">Reserved</span> <span class="term">Instances</span></th>
+                  <td>1年・3年の契約で、条件に合う<span class="term">インスタンス</span>利用を割引</td>
+                  <td>予測可能な継続利用。条件や支払い方法で割引が変わる。すべてがキャパシティ予約を伴うわけではない</td>
+                </tr>
+                <tr>
+                  <th scope="row">Spot <span class="term">Instances</span></th>
+                  <td>余剰キャパシティを割安で利用</td>
+                  <td>再実行できるバッチなど。中断を前提に<span class="term">設計する</span></td>
+                </tr>
+                <tr>
+                  <th scope="row"><span class="term">Dedicated</span> <span class="term">Hosts</span><br>（専有ホスト）</th>
+                  <td>物理サーバーを専有し、配置を制御</td>
+                  <td>ソフトウェアのライセンス要件や規制要件に対応</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <a class="source" href="https://aws.amazon.com/ec2/pricing/">公式資料：EC2の料金・購入方法 ↗</a>
+          <a class="source" href="https://aws.amazon.com/savingsplans/compute-pricing/">公式資料：<span class="term">Compute</span> <span class="term">Savings</span> <span class="term">Plans</span> ↗</a>
+          <aside class="note warning"><strong>停止すると、すべての料金がゼロになる？</strong>停止中は通常、<span class="term">インスタンス</span>のコンピューティング料金が発生しません。ただし、<span class="term">保持する</span>EBSボリュームなどは課金されます。停止は再起動可能、終了はその<span class="term">インスタンス</span>の削除。契約した利用コミットも、停止によって消えるわけ<span class="term">ではありません。</span><a class="source" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html">公式資料：EC2の停止と開始 ↗</a></aside>
+          <aside class="note"><strong>Spotは「2分あれば必ず安全」ではない</strong>停止・終了の中断通知は通常2分前ですが、ベストエフォートです。休止では2分の猶予がありません。途中の結果を定期保存し、再実行できる設計を先に用意します。割引率や実際の料金は条件により変わるため、ここでは固定の数値として覚えません。<a class="source" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-instance-termination-notices.html">公式資料：Spotの中断通知 ↗</a></aside>
+        </section>
+        <section id="api" class="chapter" aria-labelledby="api-title">
+          <div class="section-title">
+            <span class="section-number">03</span>
+            <h2 id="api-title"><span class="heading-part">入口が違っても、</span> <span class="heading-part">APIにつながる</span></h2>
+          </div>
+          <p><strong>API</strong>は、ソフトウェア同士がやり取りするためのインターフェースです。AWSでは、リソースの作成・参照・変更などの操作をAPIで受け付けます。<span class="term">Console</span>・CLI・SDKは、そのAPIを呼ぶための<span class="term">代表的な入口です。</span></p>
+          <figure class="diagram">
+            <div class="diagram-head"><strong><span class="label-part">3つの操作方法、</span> <span class="label-part">共通するサービス操作</span></strong><span class="diagram-kind"><span class="term">CONVERGENCE</span></span></div>
+            <div class="diagram-body">
+              <div class="api-grid">
+                <div class="service neutral"><strong><span class="term">Management</span> <span class="term">Console</span></strong><small>ブラウザーで操作</small></div>
+                <div class="service neutral"><strong><span class="term">AWS CLI</span></strong><small>コマンドで操作</small></div>
+                <div class="service neutral"><strong><span class="term">AWS SDK</span></strong><small>プログラムで操作</small></div>
+              </div>
+              <div class="converge" aria-hidden="true"></div>
+              <div class="service network api-target"><strong><span class="term">AWS API</span></strong><small>認証・権限を確認して実行</small></div>
+              <div class="flow flow-stack">
+                <span class="arrow" aria-hidden="true">↓</span>
+                <div class="service compute full-width"><strong>EC2などのAWSサービス</strong><small>リソースを作成・参照・変更</small></div>
+              </div>
+            </div>
+            <figcaption>入口を変えても、権限の範囲を超えて操作できるわけ<span class="term">ではありません。</span>どの方法でも認証情報と適切な権限が<span class="term">必要です。</span></figcaption>
+          </figure>
+          <div class="table-scroll" tabindex="0" role="region" aria-label="操作方法の比較">
+            <table>
+              <caption>操作方法を、作業に合わせて選ぶ</caption>
+              <thead>
+                <tr>
+                  <th scope="col">入口</th>
+                  <th scope="col">使う場面</th>
+                  <th scope="col">具体例</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row"><span class="term">Console</span></th>
+                  <td>初めての設定、状態の確認</td>
+                  <td>EC2の一覧画面を開く</td>
+                </tr>
+                <tr>
+                  <th scope="row">CLI</th>
+                  <td>繰り返す運用、シェルスクリプト</td>
+                  <td><code>aws ec2 describe-instances</code></td>
+                </tr>
+                <tr>
+                  <th scope="row">SDK</th>
+                  <td>アプリやプログラムにAWS操作を組み込む</td>
+                  <td>PythonのBoto3でEC2一覧を取得</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="space-before">CLIはローカルのターミナルや、CLIがあらかじめ用意された<strong><span class="term">AWS CloudShell</span></strong>から<span class="term">利用できます。</span>繰り返し作業をスクリプトにすると、手入力による設定のばらつきを<span class="term">減らせます。</span>自動化しても、操作内容の確認は<span class="term">必要です。</span></p>
+          <a class="source" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html">公式資料：EC2の概要とアクセス方法 ↗</a>
+        </section>
+        <section id="scaling" class="chapter" aria-labelledby="scaling-title">
+          <div class="section-title">
+            <span class="section-number">04</span>
+            <h2 id="scaling-title"><span class="heading-part">需要に合わせて、</span> <span class="heading-part">増やす・減らす</span></h2>
+          </div>
+          <p><strong>スケーラビリティ（拡張性）</strong>は、負荷が増えても処理能力を拡張できる性質。<strong><span class="term">伸縮性</span></strong>は、変動する需要に合わせてリソースを増減できる性質です。ピークに合わせて常に大量のサーバーを稼働させる代わりに、必要な量へ<span class="term">調整します。</span></p>
+          <figure class="diagram">
+            <div class="diagram-head"><strong><span class="label-part">1台を強くするか、</span> <span class="label-part">台数を増やすか</span></strong><span class="diagram-kind"><span class="term">COMPARISON</span></span></div>
+            <div class="diagram-body scale-pair">
+              <div class="scale-panel">
+                <h3><span class="heading-part">Scale Up ·</span> <span class="heading-part">垂直スケーリング</span></h3>
+                <span class="small">1台の処理能力を増やす</span>
+                <div class="scale-visual" aria-label="小さなEC2 1台から大きなEC2 1台へ">
+                  <div class="server">EC2</div>
+                  <span class="arrow" aria-hidden="true">→</span>
+                  <div class="server large">EC2</div>
+                </div>
+                <p>CPU・メモリが足りない1台を、より大きな<span class="term">インスタンス</span>タイプに変更。逆方向は<span class="term">Scale Downです。</span></p>
+              </div>
+              <div class="scale-panel">
+                <h3><span class="heading-part">Scale Out ·</span> <span class="heading-part">水平スケーリング</span></h3>
+                <span class="small">並列に処理する台数を増やす</span>
+                <div class="scale-visual" aria-label="EC2 1台からEC2 3台へ">
+                  <div class="server">EC2</div>
+                  <span class="arrow" aria-hidden="true">→</span>
+                  <div class="servers">
+                    <div class="server">EC2</div>
+                    <div class="server">EC2</div>
+                    <div class="server">EC2</div>
+                  </div>
+                </div>
+                <p>複数のサーバーで処理を分担。台数を減らすScale Inと合わせ、EC2 Auto Scalingで<span class="term">自動化できます。</span></p>
+              </div>
+            </div>
+            <figcaption>1台の性能を変えることと、台数を変えることは別の操作です。<span class="term">Scale</span> Outには、複数台に仕事を分けられるアプリ設計が<span class="term">必要です。</span></figcaption>
+          </figure>
+          <aside class="note warning"><strong>EC2のサイズ変更は、実行中にCPUを付け足す操作ではない</strong>通常、起動ディスクにEBSを使う<span class="term">インスタンス</span>を停止し、互換性のあるタイプへ変更してから再起動します。停止による中断と、構成の互換性を考慮する必要があります。<a class="source" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-resize.html">公式資料：<span class="term">インスタンス</span>タイプの変更 ↗</a></aside>
+          <h3>監視と制御を、ループにする</h3>
+          <p><strong><span class="term">CloudWatch</span></strong>が状態を観測し、<strong><span class="term">EC2 Auto Scaling</span></strong>が設定したポリシーに従って台数を<span class="term">調整します。</span>Auto Scalingグループでは、最小台数・希望する容量・最大台数を<span class="term">設定します。</span>ターゲット追跡では、例えば平均CPU使用率の目標値を設定し、それを維持するように<span class="term">調整します。</span></p>
+          <figure class="diagram">
+            <div class="diagram-head"><strong><span class="label-part">観測 → 判断 →</span> <span class="label-part">台数変更 → 再び観測</span></strong><span class="diagram-kind"><span class="term">FEEDBACK</span> LOOP</span></div>
+            <div class="diagram-body diagram-scroll" tabindex="0" role="region" aria-label="監視と自動増減のループ図。横スクロール可能">
+              <svg class="svg-diagram" viewBox="0 0 820 270" role="img" aria-labelledby="loop-title loop-desc">
+                <title id="loop-title">CloudWatchとEC2 Auto Scalingのフィードバックループ</title>
+                <desc id="loop-desc">EC2がメトリクスをCloudWatchに送信。CloudWatchのアラームを用いてAuto Scalingがポリシーに従い台数を変更。その変化を再びCloudWatchが観測する。</desc>
+                <defs>
+                  <marker id="feedback-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                    <path d="M0 0 L8 4 L0 8" fill="#7042a2"/>
+                  </marker>
+                  <marker id="loop-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                    <path d="M0 0 L8 4 L0 8" fill="#607184"/>
+                  </marker>
+                </defs>
+                <rect class="compute-box" x="14" y="80" width="200" height="90" rx="10"/>
+                <text x="114" y="116" text-anchor="middle" class="svg-label">EC2インスタンス群</text>
+                <text x="114" y="145" text-anchor="middle" class="svg-small">処理を実行</text>
+                <rect class="monitor-box" x="307" y="80" width="200" height="90" rx="10"/>
+                <text x="407" y="116" text-anchor="middle" class="svg-label">Amazon CloudWatch</text>
+                <text x="407" y="145" text-anchor="middle" class="svg-small">メトリクス・アラーム</text>
+                <rect class="control-box" x="600" y="80" width="206" height="90" rx="10"/>
+                <text x="703" y="116" text-anchor="middle" class="svg-label">EC2 Auto Scaling</text>
+                <text x="703" y="145" text-anchor="middle" class="svg-small">ポリシーで容量を調整</text>
+                <path d="M214 125 H299" fill="none" stroke="#607184" stroke-width="2" marker-end="url(#loop-arrow)"/>
+                <text x="259" y="107" text-anchor="middle" class="svg-small">観測値</text>
+                <path d="M507 125 H592" fill="none" stroke="#607184" stroke-width="2" marker-end="url(#loop-arrow)"/>
+                <text x="550" y="107" text-anchor="middle" class="svg-small">アラーム</text>
+                <path class="feedback" d="M703 170 V226 H114 V178"/>
+                <text x="408" y="215" text-anchor="middle" class="svg-small">起動・終了して台数を調整 → 負荷の変化を再び観測</text>
+                <text x="407" y="42" text-anchor="middle" class="svg-small">設定例：最小2台 / 希望2台 / 最大6台 · 平均CPUの目標50%</text>
+              </svg>
+            </div>
+            <figcaption>矢印は観測・制御の方向を表します。これはターゲット追跡の概念図で、実際の反映には起動やウォームアップの時間がかかります。目標50%と台数は<span class="term">学習用の例です。</span></figcaption>
+          </figure>
+          <aside class="note important"><strong>重要：観測するサービスと、増減するサービスを分けて覚える</strong>CloudWatchは監視、Auto Scalingは台数の制御。一般的なScale Inでは<span class="term">インスタンス</span>を終了します。最小・最大容量や起動時間があるため、需要に無制限・瞬時に追従するわけ<span class="term">ではありません。</span><a class="source" href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html">公式資料：ターゲット追跡スケーリング ↗</a></aside>
+        </section>
+        <section id="availability" class="chapter" aria-labelledby="availability-title">
+          <div class="section-title">
+            <span class="section-number">05</span>
+            <h2 id="availability-title"><span class="heading-part">分散して、</span> <span class="heading-part">止まりにくくする</span></h2>
+          </div>
+          <p>複数台に増やすだけでは、1か所の障害にまとめて巻き込まれるかもしれません。<strong>高可用性（障害時もサービスを継続しやすい性質）</strong>を目指すなら、リージョン内の複数の<strong><span class="term">Availability</span> Zone（AZ）</strong>に<span class="term">分散します。</span>AZは、1つ以上の独立した<span class="term">データセンター</span>から構成される<span class="term">配置単位です。</span></p>
+          <p><span class="term">リクエスト</span>を各サーバーへ振り分ける役割は<strong><span class="term">Elastic</span> Load <span class="term">Balancing</span>（ELB）</strong>が担います。図ではWeb用途の<strong><span class="term">Application</span> Load <span class="term">Balancer</span>（ALB）</strong>を例にしています。</p>
+          <figure class="diagram">
+            <div class="diagram-head"><strong><span class="label-part">同じ入口から、</span> <span class="label-part">別々のAZへ分散する</span></strong><span class="diagram-kind"><span class="term">HIERARCHY</span> + <span class="term">FAN-OUT</span></span></div>
+            <div class="diagram-body diagram-scroll" tabindex="0" role="region" aria-label="リージョン・AZ・サブネット・EC2とALBの図。横スクロール可能">
+              <svg class="svg-diagram" viewBox="0 0 820 560" role="img" aria-labelledby="ha-title ha-desc">
+                <title id="ha-title">リージョン内のALBから、複数AZのEC2にリクエストを分散</title>
+                <desc id="ha-desc">ユーザーからALBへリクエスト。ALBからAZ AとAZ BのEC2へ分岐。各EC2はそれぞれのAZ内のサブネットに配置される。VPC、ルート、セキュリティ設定などは省略。</desc>
+                <defs>
+                  <marker id="route-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                    <path d="M0 0 L8 4 L0 8" fill="#607184"/>
+                  </marker>
+                </defs>
+                <rect x="292" y="8" width="236" height="56" rx="9" fill="#f4f5f6" stroke="#a8b0b7"/>
+                <text x="410" y="42" text-anchor="middle" class="svg-label">ユーザー / クライアント</text>
+                <rect class="network-box" x="14" y="100" width="792" height="430" rx="15"/>
+                <text x="38" y="131" class="svg-label">AWS Region</text>
+                <rect class="network-box" x="278" y="157" width="264" height="76" rx="10"/>
+                <text x="410" y="187" text-anchor="middle" class="svg-label">Application Load Balancer</text>
+                <text x="410" y="213" text-anchor="middle" class="svg-small">ELB · 共通のDNS名で受け付け</text>
+                <path class="route" d="M410 64 V149"/>
+                <rect x="40" y="300" width="350" height="206" rx="12" fill="#fff" stroke="#23658a" stroke-dasharray="6 4"/>
+                <rect x="430" y="300" width="350" height="206" rx="12" fill="#fff" stroke="#23658a" stroke-dasharray="6 4"/>
+                <text x="60" y="330" class="svg-label">Availability Zone A</text>
+                <text x="450" y="330" class="svg-label">Availability Zone B</text>
+                <rect class="network-box" x="60" y="350" width="310" height="136" rx="9"/>
+                <rect class="network-box" x="450" y="350" width="310" height="136" rx="9"/>
+                <text x="80" y="378" class="svg-small">Subnet A · 単一AZに所属</text>
+                <text x="470" y="378" class="svg-small">Subnet B · 単一AZに所属</text>
+                <rect class="compute-box" x="108" y="404" width="214" height="62" rx="8"/>
+                <rect class="compute-box" x="498" y="404" width="214" height="62" rx="8"/>
+                <text x="215" y="431" text-anchor="middle" class="svg-label">EC2 · Webアプリ</text>
+                <text x="215" y="453" text-anchor="middle" class="svg-small">処理を実行</text>
+                <text x="605" y="431" text-anchor="middle" class="svg-label">EC2 · Webアプリ</text>
+                <text x="605" y="453" text-anchor="middle" class="svg-small">処理を実行</text>
+                <path class="route" d="M345 233 V423 Q345 435 333 435 H324"/>
+                <path class="route" d="M475 233 V260 Q475 272 487 272 H723 Q735 272 735 284 V423 Q735 435 723 435 H714"/>
+                <text x="560" y="199" class="svg-small">設定したルールで振り分け</text>
+                <text x="410" y="554" text-anchor="middle" class="svg-small">配置とリクエストの方向を示す概念図。VPC・ALB用サブネット・経路設定は省略。</text>
+              </svg>
+              <div class="legend"><span><i class="dot compute"></i><span class="term">Compute</span>：処理する</span><span><i class="dot network"></i><span class="term">Network</span>：配置・通信</span></div>
+            </div>
+            <figcaption>リージョンの中にAZがあり、<span class="term">サブネット</span><span class="term">（ネットワーク</span>を区切った範囲）は1つのAZに属します。EC2は<span class="term">サブネット</span>へ配置されます。実際にはVPC（AWS内の仮想<span class="term">ネットワーク）</span>が複数AZにまたがり、ALBにも<span class="term">サブネット</span>の設定が<span class="term">必要です。</span></figcaption>
+          </figure>
+          <div class="two-col">
+            <div class="explain-card">
+              <h3>ELB：どこへ送るか</h3>
+              <p>複数のターゲットへトラフィックを<span class="term">分散します。</span>ヘルスチェックで状態を確認し、通常は正常なターゲットへ送ります。基盤のパッチ適用などはAWSが<span class="term">管理します。</span></p>
+            </div>
+            <div class="explain-card">
+              <h3>Auto Scaling：何台動かすか</h3>
+              <p>ポリシーに基づいて台数を増減し、不健全な<span class="term">インスタンス</span>を<span class="term">置き換えます。</span>ELBとの連携を<span class="term">設定する</span>と、追加した<span class="term">インスタンス</span>をターゲットへ<span class="term">登録できます。</span></p>
+            </div>
+          </div>
+          <aside class="note important"><strong>重要：高可用性とスケーリングは、目的が違う</strong>複数AZへの配置は障害の影響を小さくするため。スケーリングは需要に合う容量を確保するため。両方を組み合わせ、セッションやデータを1台だけに閉じ込めず、障害時の容量も考慮します。EC2だけを冗長化しても、データベースなどが単一障害点ならシステム全体の可用性は保証されません。<a class="source" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html">公式資料：リージョンとAZ ↗</a></aside>
+          <a class="source" href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/autoscaling-load-balancer.html">公式資料：Auto ScalingとELBの連携 ↗</a>
+          <h3>内部の通信にも、共通の入口を置ける</h3>
+          <p>フロントエンドがバックエンド各台のアドレスを<span class="term">管理する</span>代わりに、内部ELBのDNS名へ<span class="term">リクエスト</span>を送ります。台数変更の影響を<span class="term">減らせます。</span>ただし、同期通信では相手の応答を待つため、時間的な依存は<span class="term">残ります。</span></p>
+          <figure class="diagram">
+            <div class="diagram-head"><strong><span class="label-part">呼び出し先の</span> <span class="label-part">個別アドレスを隠す</span></strong><span class="diagram-kind">FLOW</span></div>
+            <div class="diagram-body">
+              <div class="flow">
+                <div class="service compute"><strong>フロントエンド</strong><small><span class="term">リクエスト</span>を送る</small></div>
+                <span class="arrow" aria-hidden="true">→</span>
+                <div class="service network"><strong>内部ELB</strong><small>共通のDNS名</small></div>
+                <span class="arrow" aria-hidden="true">→</span>
+                <div class="service compute"><strong>バックエンド群</strong><small>台数を独立に変更</small></div>
+              </div>
+            </div>
+            <figcaption>個々のバックエンドの増減を、呼び出す側から切り離します。ELBを入れただけで、すべての依存関係がなくなるわけ<span class="term">ではありません。</span></figcaption>
+          </figure>
+          <aside class="note"><strong>補足：常に「最も空いている1台」へ送るわけではない</strong>振り分けはロードバランサーの種類や設定したアルゴリズムによります。ALBは既定ではラウンドロビンです。また、ELBの自動拡張は無料ではなく、稼働時間や容量使用などに応じて料金が発生します。<a class="source" href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/edit-target-group-attributes.html">公式資料：ALBの振り分け方式 ↗</a><a class="source" href="https://aws.amazon.com/elasticloadbalancing/pricing/">公式資料：ELBの料金 ↗</a></aside>
+        </section>
+        <section id="messaging" class="chapter" aria-labelledby="messaging-title">
+          <div class="section-title">
+            <span class="section-number">06</span>
+            <h2 id="messaging-title"><span class="heading-part">メッセージで、</span> <span class="heading-part">実行する時刻を分ける</span></h2>
+          </div>
+          <p>注文を受け付けるWebアプリが、その場で配送処理の完了まで待つ設計だと、配送側の遅延や障害が受付側にも伝わります。<strong>キューに処理依頼を保存</strong>すれば、受付と配送が同時に動いていなくても<span class="term">連携できます。</span></p>
+          <p>このように、相手の状態や内部実装への依存を減らす設計が<strong><span class="term">疎結合</span></strong>です。直接通信すること自体が常に密結合というわけではなく、何にどの程度依存しているかが重要です。</p>
+          <figure class="diagram">
+            <div class="diagram-head"><strong><span class="label-part">SQSは仕事をためる。</span> <span class="label-part">SNSはイベントを配る。</span></strong><span class="diagram-kind"><span class="term">COMPARISON</span> + <span class="term">MESSAGE</span> FLOW</span></div>
+            <div class="diagram-body message-pair">
+              <div>
+                <h3><span class="heading-part">Amazon SQS ·</span> <span class="heading-part">キュー</span></h3>
+                <p>仕事を保存し、受信側が取りに行く。</p>
+                <div class="vertical-flow">
+                  <div class="service neutral"><strong>注文受付アプリ</strong><small>配送依頼を送信</small></div>
+                  <span class="arrow" aria-hidden="true">↓<small>送信</small></span>
+                  <div class="service messaging">
+                    <strong>SQSキュー</strong>
+                    <small>処理待ちのメッセージを保存</small>
+                    <div class="queue-payload" aria-hidden="true"><span>#103</span><span>#102</span><span>#101</span></div>
+                  </div>
+                  <span class="arrow" aria-hidden="true">↓<small>受信要求への応答</small></span>
+                  <div class="service compute"><strong>配送ワーカー群</strong><small>受信 → 処理 → 削除</small></div>
+                </div>
+              </div>
+              <div>
+                <h3><span class="heading-part">Amazon SNS ·</span> <span class="heading-part">Pub/Sub</span></h3>
+                <p>1つのイベントを複数の購読先へ配信。</p>
+                <div class="vertical-flow">
+                  <div class="service neutral"><strong>注文受付アプリ</strong><small>「注文確定」イベントを発行</small></div>
+                  <span class="arrow" aria-hidden="true">↓<small><span class="term">Publish</span></small></span>
+                  <div class="service messaging"><strong>SNSトピック</strong><small>購読先へファンアウト</small></div>
+                  <span class="arrow" aria-hidden="true">↓<small>配信</small></span>
+                  <div class="fanout" aria-hidden="true"></div>
+                  <div class="subscriber-grid">
+                    <div class="service messaging"><strong>配送用SQS</strong><small>配送処理へ</small></div>
+                    <div class="service messaging"><strong>分析用SQS</strong><small>分析処理へ</small></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption>矢印はメッセージが進む方向。SQSの受信はワーカーがポーリングします。複数のワーカーは同じ仕事を分担し、SNSの複数購読先はそれぞれ同じイベントを受け取ります。</figcaption>
+          </figure>
+          <div class="table-scroll" tabindex="0" role="region" aria-label="SQSとSNSの比較">
+            <table>
+              <caption>キューとトピックの違い</caption>
+              <thead>
+                <tr>
+                  <th scope="col"><span class="term">比較する</span>点</th>
+                  <th scope="col"><span class="term">Amazon</span> SQS</th>
+                  <th scope="col"><span class="term">Amazon</span> SNS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">中心となる役割</th>
+                  <td>処理待ちの仕事をバッファリング</td>
+                  <td>イベントを購読先へ配信</td>
+                </tr>
+                <tr>
+                  <th scope="row">受信側との関係</th>
+                  <td>受信側がポーリングして取得</td>
+                  <td>サービスが購読先へ配信</td>
+                </tr>
+                <tr>
+                  <th scope="row">複数の受信者</th>
+                  <td>ワーカーが仕事を分担。重複受信に備える</td>
+                  <td>各購読先へ配信（フィルター設定で対象を絞れる）</td>
+                </tr>
+                <tr>
+                  <th scope="row">用途</th>
+                  <td>配送、画像変換、非同期バッチ</td>
+                  <td>注文イベントの配信、メール・SMS・プッシュ通知</td>
+                </tr>
+                <tr>
+                  <th scope="row">組み合わせ</th>
+                  <td colspan="2">SNS → 複数のSQS → 各処理。イベントの配信と、処理待ちの保存を両立</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>SQS：受信しただけでは、処理完了ではない</h3>
+          <p>メッセージの中身を<strong><span class="term">ペイロード</span></strong>と<span class="term">呼びます。</span>例えば、注文IDと配送先を含むデータです。ワーカーが受信すると、そのメッセージは<strong><span class="term">可視性タイムアウト</span></strong>の間、ほかのワーカーから見えなく<span class="term">なります。</span>処理に成功したワーカーが削除しなければ、再び受信できるように<span class="term">なります。</span></p>
+          <aside class="note warning"><strong>保存期限と重複に備える</strong>SQSは無期限に保管しません。保持期間は既定4日、最大14日です。Standardキューは少なくとも1回の配信で、重複や順序の入れ替わりがあり得ます。注文IDなどで同じ処理を二重に実行しない仕組み（冪等性）を<span class="term">設計します。</span>失敗が続くメッセージはDLQ（デッドレターキュー）へ分けて調査できます。<a class="source" href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-queue-parameters.html">公式資料：SQSの保持期間 ↗</a><a class="source" href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html">公式資料：可視性タイムアウト ↗</a></aside>
+          <a class="source" href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues.html">公式資料：Standardキューの配信特性 ↗</a>
+          <h3>SNS：受信先の数を、発行側から切り離す</h3>
+          <p>SNSのPublish/<span class="term">Subscribe</span>（発行・購読）では、トピックへ発行する側は、配送・分析などの購読先を個別に呼び出す必要がありません。新しい購読先を追加しても、発行側の処理を大きく変えずに連携先を増やせます。</p>
+          <aside class="note"><strong>「その瞬間に受け取れなければ消える」は単純化しすぎ</strong>SNSには配信先に応じた再試行があります。ただし、配信や業務処理の完了が無条件に保証されるわけ<span class="term">ではありません。</span>SNSからSQSへ<span class="term">配信する</span>と、受信側の処理待ちをキューで<span class="term">保持できます。</span><a class="source" href="https://docs.aws.amazon.com/sns/latest/dg/sns-message-delivery-retries.html">公式資料：SNSの配信再試行 ↗</a></aside>
+        </section>
+        <section id="review" class="chapter" aria-labelledby="review-title">
+          <div class="section-title">
+            <span class="section-number">07</span>
+            <h2 id="review-title"><span class="heading-part">役割の違いを、</span> <span class="heading-part">言葉にしてみる</span></h2>
+          </div>
+          <ul class="summary-list">
+            <li><strong>EC2</strong>：処理を<span class="term">実行する。</span>ファミリーとサイズで特性・容量を選ぶ。</li>
+            <li><strong><span class="term">Console</span> / CLI / SDK</strong>：AWS APIへ操作を届ける入口。</li>
+            <li><strong><span class="term">CloudWatch</span></strong>：状態を観測する。<strong><span class="term">Auto Scaling</span></strong>：台数を<span class="term">制御する。</span></li>
+            <li><strong>ELB</strong>：<span class="term">リクエスト</span>を<span class="term">分散する。</span><strong>複数AZ</strong>：配置場所の障害に備える。</li>
+            <li><strong>SQS</strong>：仕事をためて処理時刻を分ける。<strong>SNS</strong>：イベントを複数先へ<span class="term">配信する。</span></li>
+          </ul>
+          <div class="review-grid">
+            <details>
+              <summary>Q1. EC2を増やしたのに、<span class="term">リクエスト</span>が1台へ集中する。<span class="term">何を考える？</span></summary>
+              <p>台数を増やすAuto Scalingとは別に、<span class="term">リクエスト</span>を<span class="term">分散する</span>仕組みが<span class="term">必要です。</span>ELB、ターゲット登録、ヘルスチェックや振り分け設定を<span class="term">確認します。</span></p>
+            </details>
+            <details>
+              <summary>Q2. 高性能なEC2を1台にすれば、高可用性になる？</summary>
+              <p>1台の性能を上げても、その1台や配置場所が止まれば処理は止まります。複数AZに分散し、ほかの台へ処理を引き継げる構成と容量を<span class="term">考えます。</span></p>
+            </details>
+            <details>
+              <summary>Q3. 配送処理が止まっても、注文の受付を続けたい。何を挟む？</summary>
+              <p>SQSに処理依頼を保存し、配送ワーカーが後から受信します。受付側はSQSへの送信に成功する必要があり、保持期間内に処理を再開できることも<span class="term">必要です。</span>受付成功と配送完了は別の状態として扱います。</p>
+            </details>
+            <details>
+              <summary>Q4. 注文のイベントを、配送と分析の両方で処理したい。</summary>
+              <p>SNSのトピックへ発行し、配送用と分析用のSQSをそれぞれ購読させます。各処理が独立したキューを持つため、別々のペースで処理できます。</p>
+            </details>
+          </div>
+          <aside class="note important"><strong>このModuleの中心となる考え方</strong>「動かす・観測する・増減する・<span class="term">分散する</span>・つなぐ」を、別々の役割として<span class="term">設計する。</span>それぞれの役割を組み合わせることで、需要の変化や障害へ対応しやすく<span class="term">なります。</span></aside>
+        </section>
+        <section id="sources" class="chapter" aria-labelledby="sources-title">
+          <div class="section-title">
+            <span class="section-number">08</span>
+            <h2 id="sources-title">確認に使った公式資料</h2>
+          </div>
+          <p class="small">本文は提供されたModule 2のトランスクリプトを再構成し、誤解しやすい箇所を補足しています。以下は補足を確認したAWS公式資料です（確認日：2026年10月4日）。サービスの仕様や料金は更新されるため、実際の利用前に最新版を<span class="term">確認してください。</span></p>
+          <ul class="sources-list">
+            <li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html">EC2：<span class="term">インスタンス</span>タイプ</a>/<a href="https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-nitro-instances.html"><span class="term">Nitro</span> <span class="term">System</span></a></li>
+            <li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-resize.html">EC2：タイプ変更</a>/<a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html">停止と開始</a></li>
+            <li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-reserved-instances.html"><span class="term">Reserved</span> <span class="term">Instances</span></a>/<a href="https://aws.amazon.com/ec2/pricing/">EC2料金</a>/<a href="https://aws.amazon.com/savingsplans/compute-pricing/"><span class="term">Compute</span> <span class="term">Savings</span> <span class="term">Plans</span></a>/<a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dedicated-hosts-overview.html"><span class="term">Dedicated</span> <span class="term">Hosts</span></a></li>
+            <li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-instance-termination-notices.html">Spotの中断通知</a>/<a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html">EC2の概要とアクセス方法</a></li>
+            <li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html">リージョンとAZ</a>/<a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html">ターゲット追跡</a></li>
+            <li><a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/edit-target-group-attributes.html">ALBの振り分け</a>/<a href="https://aws.amazon.com/elasticloadbalancing/pricing/">ELB料金</a></li>
+            <li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-queue-parameters.html">SQSの保持期間</a>/<a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html">可視性タイムアウト</a></li>
+            <li><a href="https://docs.aws.amazon.com/sns/latest/dg/sns-message-delivery-retries.html">SNSの配信再試行</a></li>
+          </ul>
+        </section>
+        <nav class="module-nav" aria-label="モジュール間の移動"><a href="module-01.html">← <span class="term">Previous</span> · <span class="term">Module</span> 1</a><a href="../index.html">Home</a><a href="module-03.html">Next · <span class="term">Module</span> 3 →</a></nav>
+        <footer class="footer">AWS <span class="term">STUDY</span> <span class="term">NOTES</span> / <span class="term">MODULE</span> 02<br>個人学習用の補助教材です。AWS公式教材<span class="term">ではありません。</span>図は概念の理解を目的とし、完全な構築手順を示すもの<span class="term">ではありません。</span></footer>
+      </main>
+    </div>
+  </body>
+</html>

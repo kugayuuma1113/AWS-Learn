@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="どこで動かすか、どこから届けるか、どう同じ構成を作るか。リージョン・エッジ・Infrastructure as Codeを結びつけて整理します。">
+<title>Module 4 | 配置と配信を、再現できる構成へ
+</title>
+<link rel="stylesheet" href="../assets/css/style.css?v=20261006-5">
+<link rel="stylesheet" href="../assets/css/curriculum.css?v=20261006-curriculum-5">
+<script src="../assets/js/main.js" defer></script>
+</head>
+<body><a class="skip-link" href="#main">本文へスキップ</a>
+<header class="site-header"><a class="brand" href="../index.html"><span class="brand-mark">a /</span>AWS STUDY NOTES</a><span class="header-meta">SKILL BUILDER · VISUAL LEARNING</span>
+</header>
+<div class="shell">
+<aside class="toc">
+<p class="eyebrow toc-title">IN THIS MODULE
+</p>
+<nav aria-label="このページの目次">
+<ol>
+<li><a href="#regions"><span>01</span>リージョンの選択</a>
+</li>
+<li><a href="#resilience"><span>02</span>障害境界と冗長性</a>
+</li>
+<li><a href="#edge"><span>03</span>エッジと配信</a>
+</li>
+<li><a href="#iac"><span>04</span>CloudFormationとIaC</a>
+</li>
+<li><a href="#review"><span>05</span>重要ポイントと復習</a>
+</li>
+<li><a href="#sources"><span>06</span>公式資料</a>
+</li>
+</ol>
+</nav><a class="toc-home" href="../index.html">← 学習ホームへ</a>
+</aside>
+<main id="main" class="article">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <span class="term">Module</span> 04
+</div>
+<header class="hero">
+<p class="eyebrow"><span class="term">MODULE</span> 04 / <span class="term">GLOBAL</span> <span class="term">INFRASTRUCTURE</span>
+</p>
+<h1><span class="heading-part">配置と配信を、</span> <span class="heading-part">再現できる構成へ</span>
+</h1>
+<p class="lead">どこで動かすか、どこから届けるか、どう同じ構成を作るか。リージョン・エッジ・<span class="term">Infrastructure</span> as Codeを結びつけて<span class="term">整理します。</span>
+</p>
+<div class="hero-meta"><span class="tag">5つの学習セクション</span><span class="tag">図解＋比較表＋復習</span><span class="tag">公式資料確認：2026.10.06</span>
+</div>
+<div class="learning-goals">
+<h2>このModuleで学ぶこと
+</h2>
+<div class="goal-grid">
+<p><b>01</b><span>リージョン選択の4つの基準を<span class="term">説明する</span></span>
+</p>
+<p><b>02</b><span>マルチAZとマルチリージョンの狙いを分ける</span>
+</p>
+<p><b>03</b><span>CloudFrontとRoute 53の役割を<span class="term">理解する</span></span>
+</p>
+<p><b>04</b><span>CloudFormationによる再現可能な構築を<span class="term">理解する</span></span>
+</p>
+</div>
+</div>
+</header>
+<section id="regions" class="chapter" aria-labelledby="regions-title">
+<div class="section-title"><span class="section-number">01</span>
+<h2 id="regions-title"><span class="heading-part">リージョンを、</span> <span class="heading-part">要件から選ぶ</span>
+</h2>
+</div>
+<p>リージョンは独立した地理的な領域です。選ぶ順序は、まず守るべき要件を満たし、その中で<span class="term">利用者</span>との距離・サービス・料金を<span class="term">比較する、</span>と考えると<span class="term">整理できます。</span>
+</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="リージョン選択の4つの考慮事項。狭い画面では横にスクロールできます">
+<table>
+<caption>リージョン選択の4つの考慮事項
+</caption>
+<thead>
+<tr>
+<th scope="col">基準
+</th>
+<th scope="col"><span class="term">確認する</span>こと
+</th>
+<th scope="col">意味
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">コンプライアンス
+</th>
+<td>データの配置・処理場所の要件
+</td>
+<td>法令・契約・組織の要件を満たす
+</td>
+</tr>
+<tr>
+<th scope="row">近接性
+</th>
+<td><span class="term">利用者</span>との距離と実際の<span class="term">レイテンシー</span>
+</td>
+<td>応答にかかる時間を小さくする
+</td>
+</tr>
+<tr>
+<th scope="row">サービスの提供状況
+</th>
+<td>必要なサービス・機能が使えるか
+</td>
+<td>リージョンによる提供の差を<span class="term">確認する</span>
+</td>
+</tr>
+<tr>
+<th scope="row">料金
+</th>
+<td><span class="term">利用する</span>構成の料金と転送費用
+</td>
+<td>同じ構成でも地域によって価格が変わる
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<aside class="note "><strong><span class="label-part">補足：配置場所は、</span> <span class="label-part">サービス単位で確認する</span></strong>リージョンを選べるサービスでは保存先を指定しますが、グローバルサービス、レプリケーション、ログ、配信などのデータ処理も<span class="term">確認します。</span>特定の国の法律を、すべてのデータに一律に<span class="term">当てはめません。</span>
+</aside>
+</section>
+<section id="resilience" class="chapter" aria-labelledby="resilience-title">
+<div class="section-title"><span class="section-number">02</span>
+<h2 id="resilience-title"><span class="heading-part">AZとリージョンで、</span> <span class="heading-part">障害への備えを変える</span>
+</h2>
+</div>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">リージョン・AZ・施設を、</span> <span class="label-part">区別して配置する</span></strong><span class="diagram-kind"><span class="term">HIERARCHY</span></span>
+</div>
+<div class="diagram-body">
+<div class="placement-scope region-scope">
+<p class="scope-title"><span class="label-part">AWS Region｜</span> <span class="label-part">地理的な領域</span>
+</p>
+<div class="placement-grid">
+<div class="placement-scope az-scope">
+<p class="scope-title"><span class="label-part">AZ A｜</span> <span class="label-part">独立した</span> <span class="label-part">障害境界</span>
+</p>
+<div class="service network"><strong><span class="label-part">データセンター</span></strong><small><span class="label-part">1つ以上の施設</span></small>
+</div>
+</div>
+<div class="placement-scope az-scope">
+<p class="scope-title"><span class="label-part">AZ B｜</span> <span class="label-part">独立した</span> <span class="label-part">障害境界</span>
+</p>
+<div class="service network"><strong><span class="label-part">データセンター</span></strong><small><span class="label-part">1つ以上の施設</span></small>
+</div>
+</div>
+</div>
+<p>図では2つのAZを表示。リージョンは複数のAZで構成されます。
+</p>
+</div>
+</div>
+<figcaption>リージョンとAZの関係はModule 1と共通です。ここでは、どの障害範囲に備えるかという判断へ進みます。
+</figcaption>
+</figure>
+<div class="two-col">
+<div class="explain-card">
+<h3><span class="label-part">マルチAZ</span>
+</h3>
+<p>同じリージョン内の複数AZを<span class="term">利用します。</span>AZ規模の障害に備え、処理とデータの冗長性を<span class="term">設計します。</span>
+</p>
+</div>
+<div class="explain-card">
+<h3><span class="label-part">マルチリージョン</span>
+</h3>
+<p>別のリージョンへも構成を用意します。リージョン規模の障害への復旧や、地理的な要件に<span class="term">対応します。</span>
+</p>
+</div>
+</div>
+<aside class="note important"><strong><span class="label-part">重要：複製と切り替えを、</span> <span class="label-part">別々に設計する</span></strong>どちらも、置くだけで自動的に完成しません。データの同期、通信の切り替え、復旧時間、失ってよいデータ量、追加コストを<span class="term">確認します。</span>
+</aside><a class="source" href="https://aws.amazon.com/about-aws/global-infrastructure/regions_az/">公式資料：リージョンとAZ ↗</a>
+</section>
+<section id="edge" class="chapter" aria-labelledby="edge-title">
+<div class="section-title"><span class="section-number">03</span>
+<h2 id="edge-title"><span class="heading-part">名前を解決し、</span> <span class="heading-part">近くから届ける</span>
+</h2>
+</div>
+<p><strong><span class="term">Amazon</span> <span class="term">Route</span> 53</strong>はDNSのサービスです。ドメイン名への問い合わせに、接続先を示すDNS情報を<span class="term">返します。</span><strong><span class="term">Amazon</span> <span class="term">CloudFront</span></strong>はCDNのサービスで、エッジロケーションを使ってコンテンツを配信します。DNSの名前解決と、実際のコンテンツ配信は別の役割です。
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">CloudFrontは、</span> <span class="label-part">キャッシュを使って配信する</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service neutral"><strong><span class="label-part">利用者</span></strong><small><span class="label-part">コンテンツを要求</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service network"><strong><span class="label-part">CloudFront</span></strong><small><span class="label-part">エッジで配信・キャッシュ</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service data"><strong><span class="label-part">オリジン</span></strong><small><span class="label-part">元のコンテンツを保持</span></small>
+</div>
+</div>
+</div>
+<figcaption><span class="term">キャッシュ</span>にあればエッジから<span class="term">返します。</span>なければ、オリジンへ取得しに行きます。図の矢印は要求の向きで、応答は逆方向です。
+</figcaption>
+</figure>
+<div class="table-scroll" tabindex="0" role="region" aria-label="配置・配信のためのサービス。狭い画面では横にスクロールできます">
+<table>
+<caption>配置・配信のためのサービス
+</caption>
+<thead>
+<tr>
+<th scope="col">要素
+</th>
+<th scope="col">主な役割
+</th>
+<th scope="col">混同しないこと
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">エッジロケーション
+</th>
+<td><span class="term">利用者</span>への配信などを支える拠点
+</td>
+<td>一般的なEC2配置先のAZとは<span class="term">異なる</span>
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">CloudFront</span>
+</th>
+<td>コンテンツをエッジから<span class="term">配信する</span>
+</td>
+<td>元データの保管先やアプリ本体とは別
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Route</span> 53
+</th>
+<td>DNS・ドメイン登録・DNSルーティング
+</td>
+<td>コンテンツそのものを配信しない
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Global</span> <span class="term">Accelerator</span>
+</th>
+<td>AWSグローバル<span class="term">ネットワーク</span>で経路を最適化
+</td>
+<td>CloudFrontのコンテンツ<span class="term">キャッシュ</span>とは別
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Outposts</span>
+</th>
+<td><span class="term">オンプレミス</span>でAWS基盤を<span class="term">利用する</span>
+</td>
+<td><span class="term">利用者</span>の近くにあるエッジの<span class="term">キャッシュ</span>とは別
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>エッジを使っても、<span class="term">キャッシュ</span>の有効期限、オリジンの負荷、必要な認証や通信設定を<span class="term">考えます。</span>ユーザーの近くに配信拠点があることと、データの原本がその地域に保存されることは同じ<span class="term">ではありません。</span>
+</p><a class="source" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/HowCloudFrontWorks.html">公式資料：CloudFrontによるコンテンツ配信 ↗</a>
+</section>
+<section id="iac" class="chapter" aria-labelledby="iac-title">
+<div class="section-title"><span class="section-number">04</span>
+<h2 id="iac-title"><span class="heading-part">同じ構成を、</span> <span class="heading-part">コードから作る</span>
+</h2>
+</div>
+<p>複数の環境を手作業で構築すると、設定の抜けや差が入りやすく<span class="term">なります。</span><strong><span class="term">Infrastructure</span> as Code（IaC）</strong>では、必要なリソースと設定をファイルに定義し、変更履歴も<span class="term">管理します。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">テンプレートから、</span> <span class="label-part">リソースのまとまりへ</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service data"><strong><span class="label-part">テンプレート</span></strong><small><span class="label-part">必要なリソースを定義</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service control"><strong><span class="label-part">CloudFormation</span></strong><small><span class="label-part">依存関係とAPI操作を管理</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service network"><strong><span class="label-part">スタック</span></strong><small><span class="label-part">作成したリソースの集合</span></small>
+</div>
+</div>
+</div>
+<figcaption>CloudFormationは宣言的なIaCです。<span class="term">利用者</span>は「何を作るか」を定義しますが、権限やパラメーター、更新・削除の影響は<span class="term">確認します。</span>
+</figcaption>
+</figure>
+<p>同じテンプレートを別環境へ展開し、環境ごとの値をパラメーターで渡せます。ソース管理で差分を追い、スタックとしてリソースをまとめて作成・更新・<span class="term">削除できます。</span>
+</p>
+<aside class="note "><strong><span class="label-part">補足：同じテンプレートでも、</span> <span class="label-part">すべてが同じではない</span></strong>リージョンごとのサービス提供、イメージID、名称の一意性などを考慮します。CloudFormationは環境構築を助けますが、データの複製や災害時の自動切り替えまで、何も定義せず行うわけ<span class="term">ではありません。</span>
+</aside><a class="source" href="https://docs.aws.amazon.com/whitepapers/latest/overview-deployment-options/aws-cloudformation.html">公式資料：CloudFormationとIaC ↗</a>
+</section>
+<section id="review" class="chapter" aria-labelledby="review-title">
+<div class="section-title"><span class="section-number">05</span>
+<h2 id="review-title"><span class="heading-part">重要ポイントと、</span> <span class="heading-part">理解の確認</span>
+</h2>
+</div>
+<ul class="summary-list">
+<li>リージョンは、要件・距離・サービス・料金で選ぶ。
+</li>
+<li>AZとリージョンは<span class="term">異なる</span>障害境界。冗長構成には複製と<span class="term">切り替えが必要。</span>
+</li>
+<li><span class="term">Route</span> 53はDNS、CloudFrontは配信と<span class="term">キャッシュ。</span>
+</li>
+<li>IaCは、構成の再現と変更履歴の管理を助ける。
+</li>
+</ul>
+<div class="review-grid">
+<details>
+<summary>Q1. リージョン選択で最初に<span class="term">確認する</span>ことは？
+</summary>
+<p>法令、契約、組織などの要件です。そのうえで距離、サービス、料金を<span class="term">比較します。</span>
+</p>
+</details>
+<details>
+<summary>Q2. マルチAZとマルチリージョンは<span class="term">同じ対策？</span>
+</summary>
+<p><span class="term">異なります。</span>想定する障害範囲や地理的な要件、同期・復旧の設計が<span class="term">違います。</span>
+</p>
+</details>
+<details>
+<summary>Q3. <span class="term">Route</span> 53とCloudFrontの<span class="term">違いは？</span>
+</summary>
+<p><span class="term">Route</span> 53はDNSによる接続先の案内、CloudFrontは<span class="term">コンテンツの配信です。</span>
+</p>
+</details>
+<details>
+<summary>Q4. CloudFormationテンプレートの<span class="term">価値は？</span>
+</summary>
+<p>必要な構成をコードで定義し、再利用と変更履歴の管理をしやすく<span class="term">することです。</span>
+</p>
+</details>
+</div>
+</section>
+<section id="sources" class="chapter" aria-labelledby="sources-title">
+<div class="section-title"><span class="section-number">06</span>
+<h2 id="sources-title"><span class="heading-part">確認に使った、</span> <span class="heading-part">公式資料</span>
+</h2>
+</div>
+<p class="small">元データ：<span class="term">scripts</span>/<span class="term">module4</span>.txt。提供されたトランスクリプトを意味のまとまりで再構成し、誤解しやすい箇所を以下のAWS公式資料で確認しました（2026年10月6日）。実際の操作・仕様・料金は最新版を<span class="term">確認してください。</span>
+</p>
+<ul class="sources-list">
+<li><a href="https://aws.amazon.com/about-aws/global-infrastructure/regions_az/">リージョンとAZ</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/HowCloudFrontWorks.html">CloudFrontの配信の仕組み</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html"><span class="term">Route</span> 53のルーティングポリシー</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/whitepapers/latest/overview-deployment-options/aws-cloudformation.html"><span class="term">CloudFormation</span></a>
+</li>
+</ul>
+</section>
+<nav class="module-nav" aria-label="モジュール間の移動"><a href="module-03.html">← <span class="term">Previous</span> · <span class="term">Module</span> 3</a><a href="../index.html">Home</a><a href="module-05.html">Next · <span class="term">Module</span> 5 →</a>
+</nav>
+<footer class="footer">AWS <span class="term">STUDY</span> <span class="term">NOTES</span> / <span class="term">MODULE</span> 04<br>個人学習用の補助教材です。AWS公式教材<span class="term">ではありません。</span>図は概念の理解を目的とし、完全な構築手順を示すもの<span class="term">ではありません。</span>
+</footer>
+</main>
+</div>
+</body>
+</html>

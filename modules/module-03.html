@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="EC2以外にも、コードやコンテナを動かす方法があります。制御したい範囲と、AWSに任せたい管理作業から選びます。">
+<title>Module 3 | コードとコンテナ、実行方法を選ぶ
+</title>
+<link rel="stylesheet" href="../assets/css/style.css?v=20261006-5">
+<link rel="stylesheet" href="../assets/css/curriculum.css?v=20261006-curriculum-5">
+<script src="../assets/js/main.js" defer></script>
+</head>
+<body><a class="skip-link" href="#main">本文へスキップ</a>
+<header class="site-header"><a class="brand" href="../index.html"><span class="brand-mark">a /</span>AWS STUDY NOTES</a><span class="header-meta">SKILL BUILDER · VISUAL LEARNING</span>
+</header>
+<div class="shell">
+<aside class="toc">
+<p class="eyebrow toc-title">IN THIS MODULE
+</p>
+<nav aria-label="このページの目次">
+<ol>
+<li><a href="#managed"><span>01</span>管理する範囲</a>
+</li>
+<li><a href="#lambda"><span>02</span>AWS Lambda</a>
+</li>
+<li><a href="#containers"><span>03</span>コンテナの基本</a>
+</li>
+<li><a href="#container-services"><span>04</span>AWSのコンテナ構成</a>
+</li>
+<li><a href="#purpose"><span>05</span>用途に特化したサービス</a>
+</li>
+<li><a href="#review"><span>06</span>重要ポイントと復習</a>
+</li>
+<li><a href="#sources"><span>07</span>公式資料</a>
+</li>
+</ol>
+</nav><a class="toc-home" href="../index.html">← 学習ホームへ</a>
+</aside>
+<main id="main" class="article">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <span class="term">Module</span> 03
+</div>
+<header class="hero">
+<p class="eyebrow"><span class="term">MODULE</span> 03 / <span class="term">COMPUTE</span> <span class="term">OPTIONS</span>
+</p>
+<h1><span class="heading-part">コードとコンテナ、</span> <span class="heading-part">実行方法を選ぶ</span>
+</h1>
+<p class="lead">EC2以外にも、コードや<span class="term">コンテナ</span>を動かす方法があります。制御したい範囲と、AWSに任せたい管理作業から<span class="term">選びます。</span>
+</p>
+<div class="hero-meta"><span class="tag">6つの学習セクション</span><span class="tag">図解＋比較表＋復習</span><span class="tag">公式資料確認：2026.10.06</span>
+</div>
+<div class="learning-goals">
+<h2>このModuleで学ぶこと
+</h2>
+<div class="goal-grid">
+<p><b>01</b><span>マネージド・<span class="term">サーバーレス</span>を管理範囲で<span class="term">理解する</span></span>
+</p>
+<p><b>02</b><span>Lambdaのイベント駆動と実行条件を<span class="term">説明する</span></span>
+</p>
+<p><b>03</b><span>ECR・ECS / EKS・EC2 / Fargateの<span class="term">役割を分ける</span></span>
+</p>
+<p><b>04</b><span>用途に応じて実行<span class="term">サービスを選ぶ</span></span>
+</p>
+</div>
+</div>
+</header>
+<section id="managed" class="chapter" aria-labelledby="managed-title">
+<div class="section-title"><span class="section-number">01</span>
+<h2 id="managed-title"><span class="heading-part">何を動かすか、</span> <span class="heading-part">誰が管理するか</span>
+</h2>
+</div>
+<p>EC2では、OSや<span class="term">アプリケーション</span>を細かく制御できる一方、ゲストOSの更新や<span class="term">インスタンス</span>の構成を<span class="term">利用者</span>が<span class="term">管理します。</span>マネージドサービスでは、運用作業の一部をAWSに<span class="term">任せられます。</span><strong>管理を任せるほど、自由に変更できる基盤の範囲も<span class="term">変わります。</span></strong>
+</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="実行方式と管理の境界。狭い画面では横にスクロールできます">
+<table>
+<caption>実行方式と管理の境界
+</caption>
+<thead>
+<tr>
+<th scope="col">方式
+</th>
+<th scope="col">AWSに任せること
+</th>
+<th scope="col"><span class="term">利用者</span>に残ること
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">EC2
+</th>
+<td>物理サーバー・仮想化基盤
+</td>
+<td>ゲストOS・アプリ・構成・台数増減の設計
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Lambda</span>
+</th>
+<td>通常の実行基盤・基盤のスケール
+</td>
+<td>コード・依存関係・権限・イベント処理
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Fargate</span>
+</th>
+<td><span class="term">コンテナ</span>実行用サーバーの管理
+</td>
+<td><span class="term">コンテナ</span>イメージ・リソース指定・サービス設定
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<aside class="note important"><strong><span class="label-part">重要：サーバーレスの意味</span></strong>サーバーが消えるのではなく、<span class="term">利用者</span>がサーバーを用意・保守する必要がないという意味です。コードの不具合、データ保護、権限、サービスの上限への対応は<span class="term">残ります。</span>
+</aside><a class="source" href="https://aws.amazon.com/compliance/shared-responsibility-model/">公式資料：サービスによって変わる責任 ↗</a>
+</section>
+<section id="lambda" class="chapter" aria-labelledby="lambda-title">
+<div class="section-title"><span class="section-number">02</span>
+<h2 id="lambda-title"><span class="heading-part">イベントから、</span> <span class="heading-part">コードを実行する</span>
+</h2>
+</div>
+<p><strong>AWS <span class="term">Lambda</span></strong>は、関数として用意したコードを<span class="term">実行する</span>サービスです。画像のアップロード、APIからの呼び出し、ストリームの更新などをきっかけに処理できます。
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">画像を保存し、</span> <span class="label-part">メタデータを記録する</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service data"><strong><span class="label-part">Amazon S3</span></strong><small><span class="label-part">画像をアップロード</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service compute"><strong><span class="label-part">AWS Lambda</span></strong><small><span class="label-part">イベントで関数を実行</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service data"><strong><span class="label-part">DynamoDB</span></strong><small><span class="label-part">処理結果を保存</span></small>
+</div>
+</div>
+</div>
+<figcaption>S3の通知とLambdaの呼び出し権限、DynamoDBへの書き込み権限を設定した例です。サービスを置くだけで連携するわけ<span class="term">ではありません。</span>
+</figcaption>
+</figure>
+<p>関数にはコードと実行環境、トリガー、実行ロールなどを<span class="term">設定します。</span>Java、<span class="term">Python、</span>Node.jsなどのランタイムやカスタムランタイムを<span class="term">使えます。</span>需要に応じた基盤の増減はAWSが<span class="term">行います</span>が、同時実行数などの上限は<span class="term">確認します。</span>
+</p>
+<div class="two-col">
+<div class="explain-card">
+<h3><span class="label-part">向いている処理</span>
+</h3>
+<p><span class="term">リクエスト</span>処理、画像のリサイズ、データ変換、通知など。必要なときに始まり、短時間で完了する処理に適しています。
+</p>
+</div>
+<div class="explain-card">
+<h3><span class="label-part">選び直す場面</span>
+</h3>
+<p>常時稼働するプロセスや、通常の関数の制限を超える長時間処理では、<span class="term">コンテナ</span>やバッチなどの実行方法を<span class="term">検討します。</span>
+</p>
+</div>
+</div>
+<aside class="note "><strong><span class="label-part">補足：通常の関数は、</span> <span class="label-part">最大15分</span></strong>この教材の通常のLambda実行モデルでは、タイムアウトの最大値は900秒（15分）です。現在はLambda <span class="term">Managed</span> Instancesの一部の呼び出しに<span class="term">異なる</span>上限もあるため、「Lambdaの全形態が必ず15分」とは<span class="term">一般化しません。</span>
+</aside><a class="source" href="https://docs.aws.amazon.com/lambda/latest/dg/configuration-timeout.html">公式資料：関数のタイムアウト ↗</a>
+</section>
+<section id="containers" class="chapter" aria-labelledby="containers-title">
+<div class="section-title"><span class="section-number">03</span>
+<h2 id="containers-title"><span class="heading-part">コンテナは、</span> <span class="heading-part">実行環境をまとめる</span>
+</h2>
+</div>
+<p><span class="term">コンテナ</span>は、アプリのコード・ランタイム・ライブラリなどを、移植しやすい実行単位に<span class="term">まとめます。</span>開発と本番で依存関係が異なり、「自分の環境では動く」という問題を<span class="term">減らせます。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">イメージから、</span> <span class="label-part">実行中のコンテナへ</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service data"><strong><span class="label-part">コンテナイメージ</span></strong><small><span class="label-part">コード・実行環境・依存関係</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service compute"><strong><span class="label-part">コンテナ</span></strong><small><span class="label-part">イメージから起動する</span></small>
+</div>
+</div>
+</div>
+<figcaption>イメージは配布する設計物、<span class="term">コンテナ</span>はその実行状態です。外部のデータ・秘密情報・環境固有の設定は別に<span class="term">管理します。</span>
+</figcaption>
+</figure>
+<p>数が増えると、起動・停止、配置、状態の監視、更新、台数調整をまとめて<span class="term">管理する</span>必要があります。これを<strong><span class="term">コンテナ</span>オーケストレーション</strong>と<span class="term">呼びます。</span><span class="term">コンテナ</span>は仮想マシンそのものではなく、通常はホストOSのカーネルを<span class="term">共有します。</span>
+</p>
+</section>
+<section id="container-services" class="chapter" aria-labelledby="container-services-title">
+<div class="section-title"><span class="section-number">04</span>
+<h2 id="container-services-title"><span class="heading-part">保存・管理・実行、</span> <span class="heading-part">3つの役割を分ける</span>
+</h2>
+</div>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">同じ「コンテナ」でも、</span> <span class="label-part">担当する仕事が違う</span></strong><span class="diagram-kind">ROLE <span class="term">LAYERS</span></span>
+</div>
+<div class="diagram-body">
+<div class="layer-stack">
+<div class="service data"><strong><span class="label-part">Amazon ECR</span></strong><small><span class="label-part">イメージを保存・取得</span></small>
+</div>
+<div class="service control"><strong><span class="label-part">Amazon ECS / EKS</span></strong><small><span class="label-part">コンテナの配置と実行を管理</span></small>
+</div>
+<div class="service compute"><strong><span class="label-part">Amazon EC2 / Fargate</span></strong><small><span class="label-part">実際の計算資源を提供</span></small>
+</div>
+</div>
+</div>
+<figcaption>上から下への包含ではなく、3つの役割の整理です。ECRから取得したイメージを、選んだ実行基盤で<span class="term">動かします。</span>
+</figcaption>
+</figure>
+<div class="table-scroll" tabindex="0" role="region" aria-label="コンテナサービスの役割。狭い画面では横にスクロールできます">
+<table>
+<caption><span class="term">コンテナ</span>サービスの役割
+</caption>
+<thead>
+<tr>
+<th scope="col"><span class="term">選択する</span>層
+</th>
+<th scope="col">サービス
+</th>
+<th scope="col">判断の軸
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">保存場所
+</th>
+<td><span class="term">Amazon</span> ECR
+</td>
+<td><span class="term">コンテナ</span>イメージを保管・配布する
+</td>
+</tr>
+<tr>
+<th scope="row">オーケストレーション
+</th>
+<td><span class="term">Amazon</span> ECS
+</td>
+<td>AWSのサービスと統合し、<span class="term">コンテナ</span>を<span class="term">管理する</span>
+</td>
+</tr>
+<tr>
+<th scope="row">オーケストレーション
+</th>
+<td><span class="term">Amazon</span> EKS
+</td>
+<td>マネージドなKubernetesを使う
+</td>
+</tr>
+<tr>
+<th scope="row">実行基盤
+</th>
+<td><span class="term">Amazon</span> EC2
+</td>
+<td>OS・ホストの構成を細かく<span class="term">制御する</span>
+</td>
+</tr>
+<tr>
+<th scope="row">実行基盤
+</th>
+<td>AWS <span class="term">Fargate</span>
+</td>
+<td><span class="term">対応する</span>構成でホスト管理をAWSに任せる
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>ECSを選ぶことと、Fargateを選ぶことは別の<span class="term">判断です。</span>ECSでもEC2を実行基盤にできます。EKSはKubernetesの制御プレーンを<span class="term">管理します</span>が、ワーカーノードやアプリの管理範囲は実行方法によって<span class="term">変わります。</span>
+</p>
+<aside class="note "><strong><span class="label-part">補足：自動化には設定が必要</span></strong>オーケストレーションサービスがあっても、何を健康と判定するか、必要な台数、更新方法、権限などは<span class="term">設定します。</span>Fargateの利用可否や制約もワークロードごとに<span class="term">確認します。</span>
+</aside><a class="source" href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html">公式資料：ECSと実行基盤 ↗</a>
+</section>
+<section id="purpose" class="chapter" aria-labelledby="purpose-title">
+<div class="section-title"><span class="section-number">05</span>
+<h2 id="purpose-title"><span class="heading-part">目的に合う、</span> <span class="heading-part">実行サービスを選ぶ</span>
+</h2>
+</div>
+<p>すべての処理でEC2を直接組み立てる<span class="term">必要はありません。</span>構築したい環境や運用方法が決まっている場合は、目的に合わせたサービスを<span class="term">使えます。</span>
+</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="追加で知っておく4つの選択肢。狭い画面では横にスクロールできます">
+<table>
+<caption>追加で知っておく4つの選択肢
+</caption>
+<thead>
+<tr>
+<th scope="col">サービス
+</th>
+<th scope="col">何を助けるか
+</th>
+<th scope="col">使う場面
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row"><span class="term">Elastic</span> <span class="term">Beanstalk</span>
+</th>
+<td>コードと設定から実行環境を構築・管理
+</td>
+<td>Webアプリのデプロイ。基盤のEC2等にもアクセスできる
+</td>
+</tr>
+<tr>
+<th scope="row">AWS <span class="term">Batch</span>
+</th>
+<td>ジョブのスケジュールと計算資源の調整
+</td>
+<td>大量の計算・分析をまとめて<span class="term">実行する</span>
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Amazon</span> <span class="term">Lightsail</span>
+</th>
+<td>簡単に始められる構成と料金体系
+</td>
+<td>小規模なWebサイトやアプリを運用する
+</td>
+</tr>
+<tr>
+<th scope="row">AWS <span class="term">Outposts</span>
+</th>
+<td>AWS基盤を<span class="term">オンプレミス</span>へ拡張
+</td>
+<td>低遅延やデータの配置場所に要件がある
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<aside class="note important"><strong><span class="label-part">重要：制御と運用負荷を、</span> <span class="label-part">一緒に見る</span></strong>「どれが一番高性能か」だけでは選べません。処理の時間、必要な自由度、既存の技術、配置要件、誰が運用するかを確認して<span class="term">選びます。</span>
+</aside>
+</section>
+<section id="review" class="chapter" aria-labelledby="review-title">
+<div class="section-title"><span class="section-number">06</span>
+<h2 id="review-title"><span class="heading-part">重要ポイントと、</span> <span class="heading-part">理解の確認</span>
+</h2>
+</div>
+<ul class="summary-list">
+<li>マネージド・<span class="term">サーバーレス</span>は、管理をAWSに任せる範囲の違い。
+</li>
+<li>Lambdaはイベントをきっかけに関数を<span class="term">実行する。</span>
+</li>
+<li>ECRは保存、ECS / EKSは管理、EC2 / Fargateは実行基盤。
+</li>
+<li>目的別サービスも含め、制御と運用負荷のバランスで選ぶ。
+</li>
+</ul>
+<div class="review-grid">
+<details>
+<summary>Q1. <span class="term">サーバーレス</span>でも、<span class="term">利用者</span>に残る責任は？
+</summary>
+<p>コード、依存関係、データ、権限、処理の再試行や上限への対応などです。
+</p>
+</details>
+<details>
+<summary>Q2. ECSとFargateは、同じ層の<span class="term">代替サービス？</span>
+</summary>
+<p><span class="term">違います。</span>ECSは<span class="term">コンテナ</span>の管理、Fargateは実行基盤です。ECSとEC2という<span class="term">組み合わせもあります。</span>
+</p>
+</details>
+<details>
+<summary>Q3. ECRへイメージを<span class="term">保存する</span>と、アプリも実行される？
+</summary>
+<p>保存だけでは実行されません。オーケストレーションと実行基盤を選んで起動します。
+</p>
+</details>
+<details>
+<summary>Q4. EC2の自由度が高いと、何が増える？
+</summary>
+<p>OSやホストの構成・更新など、<span class="term">利用者</span>が<span class="term">管理する</span>作業も<span class="term">増えます。</span>
+</p>
+</details>
+</div>
+</section>
+<section id="sources" class="chapter" aria-labelledby="sources-title">
+<div class="section-title"><span class="section-number">07</span>
+<h2 id="sources-title"><span class="heading-part">確認に使った、</span> <span class="heading-part">公式資料</span>
+</h2>
+</div>
+<p class="small">元データ：<span class="term">scripts</span>/<span class="term">module3</span>.txt。提供されたトランスクリプトを意味のまとまりで再構成し、誤解しやすい箇所を以下のAWS公式資料で確認しました（2026年10月6日）。実際の操作・仕様・料金は最新版を<span class="term">確認してください。</span>
+</p>
+<ul class="sources-list">
+<li><a href="https://aws.amazon.com/compliance/shared-responsibility-model/">責任共有モデル</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/lambda/latest/dg/configuration-timeout.html">Lambdaの実行時間</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html">ECSの概要と実行基盤</a>
+</li>
+</ul>
+</section>
+<nav class="module-nav" aria-label="モジュール間の移動"><a href="module-02.html">← <span class="term">Previous</span> · <span class="term">Module</span> 2</a><a href="../index.html">Home</a><a href="module-04.html">Next · <span class="term">Module</span> 4 →</a>
+</nav>
+<footer class="footer">AWS <span class="term">STUDY</span> <span class="term">NOTES</span> / <span class="term">MODULE</span> 03<br>個人学習用の補助教材です。AWS公式教材<span class="term">ではありません。</span>図は概念の理解を目的とし、完全な構築手順を示すもの<span class="term">ではありません。</span>
+</footer>
+</main>
+</div>
+</body>
+</html>

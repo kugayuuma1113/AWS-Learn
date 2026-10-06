@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Module 2 / 02 構成が変わると、 何が解決する？</title>
+    <link rel="stylesheet" href="../../assets/css/style.css?v=20261006-4">
+    <link rel="stylesheet" href="../../assets/css/focus.css?v=20261006-focus-6">
+  </head>
+  <body class="focus">
+    <a class="skip-link" href="#main">本文へスキップ</a>
+    <header class="site-header"><a class="brand" href="../../index.html"><span class="brand-mark">a /</span> AWS STUDY NOTES</a><a class="header-link" href="index.html">3案を比較</a></header>
+    <main id="main" class="focus-main ">
+      <div class="breadcrumb"><a href="index.html">見せ方の比較</a> / サンプル 02</div>
+      <nav class="focus-nav" aria-label="同じテーマの見せ方を比較"><a href="annotated.html">01 図への注釈</a><a href="evolution.html" aria-current="page">02 構成の変化</a><a href="questions.html">03 問いから確認</a></nav>
+      <header class="focus-intro">
+        <p class="eyebrow">MODULE 02 · 02</p>
+        <h1><span class="part">構成が変わると、</span> <span class="part">何が解決する？</span></h1>
+        <p class="lead">1台の構成から、台数だけを増やした構成、入口と制御を加えた構成へ。変わった場所と、その理由を<span class="part">見比べます。</span></p>
+        <div class="focus-guide">
+          <b>読み方</b>
+          <p>01 → 02 → 03の図を比べ、「追加したもの」と「解決する問題」を確認します。</p>
+        </div>
+      </header>
+      <div class="stages">
+        <section class="stage">
+          <header class="stage-head">
+            <span class="stage-index">01 / 基本構成</span>
+            <h2>1台で受ける</h2>
+          </header>
+          <div class="snapshot" role="group" aria-label="1台で受けるの構成">
+            <div class="client-pill">ユーザー</div>
+            <div class="path-label"><span aria-hidden="true">↓</span>すべてのリクエスト</div>
+            <div class="machine busy"><strong>EC2 A</strong><small>アプリを実行</small><span class="load-tag hot">負荷が集中</span></div>
+          </div>
+          <div class="stage-point">
+            <strong><span class="part">処理能力が</span> <span class="part">足りなくなる</span></strong>
+            <p>アクセスが増えると、1台のEC2に負荷が集中します。必要な容量を増やす<span class="part">方法を考えます。</span></p>
+          </div>
+        </section>
+        <section class="stage">
+          <header class="stage-head">
+            <span class="stage-index">02 / 台数を追加</span>
+            <h2><span class="part">台数だけ</span> <span class="part">増やす</span></h2>
+          </header>
+          <div class="snapshot" role="group" aria-label="台数だけ増やすの構成">
+            <div class="client-pill">ユーザー</div>
+            <div class="target-a-route"><span aria-hidden="true"></span><small>元の接続先へ</small></div>
+            <div class="machine-pair">
+              <div class="machine busy"><strong>EC2 A</strong><small>アプリを実行</small><span class="load-tag hot">負荷が集中</span></div>
+              <div class="machine idle"><strong>EC2 B</strong><small>受付なし</small><span class="load-tag">余力がある</span></div>
+            </div>
+          </div>
+          <div class="stage-point">
+            <strong><span class="part">2台目へ、</span> <span class="part">どう届ける？</span></strong>
+            <p>手でEC2を追加しても、利用者が元のアドレスへ送るままでは偏りが残ります。台数と振り分けは別の問題です。</p>
+          </div>
+        </section>
+        <section class="stage">
+          <header class="stage-head">
+            <span class="stage-index">03 / 改善した構成</span>
+            <h2><span class="part">入口と</span> <span class="part">制御を加える</span></h2>
+          </header>
+          <div class="snapshot" role="group" aria-label="入口と制御を加えるの構成">
+            <div class="client-pill">ユーザー</div>
+            <div class="path-label"><span aria-hidden="true">↓</span>共通の入口</div>
+            <div class="role-node network"><strong><span class="role-name">ELB / ALB</span></strong><small>正常なターゲットへ分散</small></div>
+            <div class="path-label"><span aria-hidden="true">↓</span>EC2 AとBへ</div>
+            <div class="machine-pair">
+              <div class="machine"><strong>EC2 A</strong><small>アプリを実行</small></div>
+              <div class="machine"><strong>EC2 B</strong><small>アプリを実行</small></div>
+            </div>
+          </div>
+          <div class="stage-point">
+            <strong><span class="part">分散と増減を</span> <span class="part">組み合わせる</span></strong>
+            <p>ELBを共通の入口にし、CloudWatchの観測を使って<span class="term">Auto Scaling</span>が台数を調整します。連携したELBへ追加台が自動<span class="part">登録されます。</span></p>
+          </div>
+        </section>
+      </div>
+      <section class="stage-summary">
+        <div>
+          <h2><span class="part">増やすことと、</span> <span class="part">送ること</span></h2>
+          <p><span class="term">Auto Scaling</span>は「何台にするか」、ELBは「どこへ送るか」。違う役割を組み合わせて、追加した処理能力を<span class="part">使えるようにします。</span></p>
+        </div>
+        <div>
+          <h2><span class="part">変化を知るための</span> <span class="part">CloudWatch</span></h2>
+          <p>需要の変化に合わせるには、まずEC2の状態を知ります。CloudWatchの<span class="term">メトリクス</span>と<span class="term">アラーム</span>を、台数制御の判断に利用します。</p>
+        </div>
+      </section>
+      <figure class="control-detail">
+        <div class="role-node monitoring"><strong><span class="role-name">CloudWatch</span></strong><small>EC2のメトリクスを観測</small></div>
+        <div class="path-label"><span aria-hidden="true">→</span>アラーム</div>
+        <div class="role-node control"><strong><span class="role-name">EC2 Auto Scaling</span></strong><small>ポリシーで台数を調整</small></div>
+        <figcaption>↑ EC2<span class="term">グループ</span>の台数を変更し、負荷を<span class="part">再び観測する。</span></figcaption>
+      </figure>
+      <section class="focus-foot" aria-labelledby="conditions-title">
+        <div class="focus-note">
+          <h2 id="conditions-title"><span class="part">増減には、</span> <span class="part">条件がある</span></h2>
+          <p>学習用の設定例は、最小2台・希望2台・最大6台、平均CPUの目標50%です。台数の増減は<span class="term">ポリシー</span>と上下限に従い、起動・<span class="term">ウォームアップ</span>には<span class="part">時間がかかります。</span>CPUが上がった瞬間に、必ず台数が増えるという意味ではありません。</p>
+          <p><span class="term">Auto Scaling</span><span class="term">グループ</span>とELBを連携させると、起動・終了に応じて<span class="term">ターゲット</span>が自動で登録・解除されます。ELBは<span class="term">ヘルスチェック</span>で状態を確かめ、通常は正常な<span class="term">ターゲット</span><span class="part">へ送ります。</span>アプリ側も複数台で処理を分担できる<span class="part">設計が必要です。</span></p>
+        </div>
+        <details>
+          <summary>確認したAWS公式資料</summary>
+          <ul class="sources-list">
+            <li><a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html"><span class="term">ターゲット</span>追跡：<span class="term">メトリクス</span>・目標値・<span class="term">ウォームアップ</span></a></li>
+            <li><a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/autoscaling-load-balancer.html"><span class="term">Auto Scaling</span>とELB：登録・解除と連携</a></li>
+          </ul>
+          <p>2026年10月6日に確認。Module 2のトランスクリプトをもとに再編集しています。図は概念図で、VPC・AZ・セキュリティ設定などは<span class="part">省略しています。</span></p>
+        </details>
+      </section>
+      <div class="focus-end"><a href="index.html">← 3案の比較へ</a><a href="../../modules/module-02.html#scaling">Module 2の既存本文へ</a></div>
+      <footer class="footer">同じテーマを異なる見せ方で比べる試作です。Module 2全体への採用は、比較後に決めます。</footer>
+    </main>
+  </body>
+</html>

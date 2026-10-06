@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="必要なITリソースを、必要なときに使う。クラウドの利点だけでなく、障害に備える配置と、利用者が担う責任まで整理します。">
+<title>Module 1 | クラウドの基本と、責任の分担
+</title>
+<link rel="stylesheet" href="../assets/css/style.css?v=20261006-5">
+<link rel="stylesheet" href="../assets/css/curriculum.css?v=20261006-curriculum-5">
+<script src="../assets/js/main.js" defer></script>
+</head>
+<body><a class="skip-link" href="#main">本文へスキップ</a>
+<header class="site-header"><a class="brand" href="../index.html"><span class="brand-mark">a /</span>AWS STUDY NOTES</a><span class="header-meta">SKILL BUILDER · VISUAL LEARNING</span>
+</header>
+<div class="shell">
+<aside class="toc">
+<p class="eyebrow toc-title">IN THIS MODULE
+</p>
+<nav aria-label="このページの目次">
+<ol>
+<li><a href="#cloud"><span>01</span>クラウドの基本</a>
+</li>
+<li><a href="#benefits"><span>02</span>クラウドの6つの利点</a>
+</li>
+<li><a href="#placement"><span>03</span>リージョンとAZ</a>
+</li>
+<li><a href="#responsibility"><span>04</span>責任共有モデル</a>
+</li>
+<li><a href="#example"><span>05</span>実際の構成へ</a>
+</li>
+<li><a href="#review"><span>06</span>重要ポイントと復習</a>
+</li>
+<li><a href="#sources"><span>07</span>公式資料</a>
+</li>
+</ol>
+</nav><a class="toc-home" href="../index.html">← 学習ホームへ</a>
+</aside>
+<main id="main" class="article">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <span class="term">Module</span> 01
+</div>
+<header class="hero">
+<p class="eyebrow"><span class="term">MODULE</span> 01 / <span class="term">CLOUD</span> <span class="term">FOUNDATIONS</span>
+</p>
+<h1><span class="heading-part">クラウドの基本と、</span> <span class="heading-part">責任の分担</span>
+</h1>
+<p class="lead">必要なITリソースを、必要なときに使う。クラウドの利点だけでなく、障害に備える配置と、<span class="term">利用者</span>が担う責任まで<span class="term">整理します。</span>
+</p>
+<div class="hero-meta"><span class="tag">6つの学習セクション</span><span class="tag">図解＋比較表＋復習</span><span class="tag">公式資料確認：2026.10.06</span>
+</div>
+<div class="learning-goals">
+<h2>このModuleで学ぶこと
+</h2>
+<div class="goal-grid">
+<p><b>01</b><span>オンデマンドと従量制の意味を<span class="term">説明する</span></span>
+</p>
+<p><b>02</b><span>クラウドの6つの利点を設計に結びつける</span>
+</p>
+<p><b>03</b><span>リージョン・AZ・<span class="term">データセンター</span>を<span class="term">区別する</span></span>
+</p>
+<p><b>04</b><span>AWSと<span class="term">利用者</span>の責任の境界を<span class="term">理解する</span></span>
+</p>
+</div>
+</div>
+</header>
+<section id="cloud" class="chapter" aria-labelledby="cloud-title">
+<div class="section-title"><span class="section-number">01</span>
+<h2 id="cloud-title"><span class="heading-part">クラウドは、</span> <span class="heading-part">ITリソースの</span> <span class="heading-part">使い方</span>
+</h2>
+</div>
+<p>クラウドコンピューティングは、<span class="term">ネットワーク</span>経由でITリソースをオンデマンドに利用し、利用量などに応じて料金を支払う仕組みです。<strong>所有するハードウェアの容量から考えるのではなく、必要な処理・保存・通信から<span class="term">考えます。</span></strong>
+</p>
+<p>AWSはAmazonのECサイトを支えるIT基盤の課題から生まれました。標準化したインフラを外部にも<span class="term">提供する</span>ことで、企業はサーバーの購入や設置を待たずに、<span class="term">アプリケーション</span>を動かせるように<span class="term">なりました。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">利用者は、</span> <span class="label-part">サービスを選んで組み合わせる</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service neutral"><strong><span class="label-part">利用者・アプリ</span></strong><small><span class="label-part">ネットワーク経由で利用</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service network"><strong><span class="label-part">AWSサービス</span></strong><small><span class="label-part">処理・保存・通信を提供</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service compute"><strong><span class="label-part">データセンター</span></strong><small><span class="label-part">実際のサーバーが稼働</span></small>
+</div>
+</div>
+</div>
+<figcaption>クラウドにも物理的なサーバーはあります。図は利用の関係であり、すべての通信が公開インターネットを通るという意味<span class="term">ではありません。</span>
+</figcaption>
+</figure>
+<div class="two-col">
+<div class="explain-card">
+<h3><span class="label-part">オンデマンド</span>
+</h3>
+<p>必要になったときにリソースを用意し、不要になったら削除・停止できます。事前に何年分もの設備を買う必要を<span class="term">減らせます。</span>
+</p>
+</div>
+<div class="explain-card">
+<h3><span class="label-part">従量制</span>
+</h3>
+<p>保存量、実行時間、<span class="term">リクエスト</span>数など、サービスごとの課金項目に応じて支払います。使い方と料金を一緒に見直します。
+</p>
+</div>
+</div>
+<aside class="note "><strong><span class="label-part">補足：削除・停止と、</span> <span class="label-part">料金の関係</span></strong>アプリを停止しても、残したディスクや<span class="term">バックアップ</span>には料金がかかることがあります。最低保存期間や利用コミットのある選択肢もあるため、「止めればすべて無料」とは<span class="term">考えません。</span>
+</aside>
+</section>
+<section id="benefits" class="chapter" aria-labelledby="benefits-title">
+<div class="section-title"><span class="section-number">02</span>
+<h2 id="benefits-title"><span class="heading-part">6つの利点を、</span> <span class="heading-part">設計に結びつける</span>
+</h2>
+</div>
+<p>クラウドの価値は、料金の安さだけ<span class="term">ではありません。</span><strong>先行投資、需要の変化、試行錯誤、運用、展開先</strong>という<span class="term">異なる</span>課題に<span class="term">対応できます。</span>
+</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="AWSクラウドの6つの利点。狭い画面では横にスクロールできます">
+<table>
+<caption>AWSクラウドの6つの利点
+</caption>
+<thead>
+<tr>
+<th scope="col">利点
+</th>
+<th scope="col">従来の課題
+</th>
+<th scope="col">クラウドで変わること
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">固定費から変動費へ
+</th>
+<td>設備を先に購入する
+</td>
+<td>小さく始め、利用量に合わせて支払う
+</td>
+</tr>
+<tr>
+<th scope="row">スケールメリット
+</th>
+<td>小規模な設備調達は単価が高い
+</td>
+<td>AWSの大規模な調達・運用の効率を活用する
+</td>
+</tr>
+<tr>
+<th scope="row">容量予測への依存を減らす
+</th>
+<td>不足か過剰投資かを事前に決める
+</td>
+<td>測定した需要に合わせて容量を調整する
+</td>
+</tr>
+<tr>
+<th scope="row">スピードと俊敏性
+</th>
+<td>調達・設置に時間がかかる
+</td>
+<td>実験環境を素早く作り、改善を繰り返す
+</td>
+</tr>
+<tr>
+<th scope="row">設備運営の負担を減らす
+</th>
+<td>電源・冷却・ラック・機器を維持する
+</td>
+<td>物理基盤をAWSに任せ、事業に集中する
+</td>
+</tr>
+<tr>
+<th scope="row">グローバル展開
+</th>
+<td>海外の設備を一から用意する
+</td>
+<td>必要な地域のAWS基盤を<span class="term">利用する</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<aside class="note important"><strong><span class="label-part">重要：弾力性は、</span> <span class="label-part">無計画とは違う</span></strong>容量を事前に固定する必要は<span class="term">減ります</span>が、需要予測・上限・起動時間・予算の確認は<span class="term">必要です。</span>自動で増減するには、<span class="term">対応する</span>サービスやポリシーを<span class="term">設定します。</span>
+</aside>
+</section>
+<section id="placement" class="chapter" aria-labelledby="placement-title">
+<div class="section-title"><span class="section-number">03</span>
+<h2 id="placement-title"><span class="heading-part">障害の影響を、</span> <span class="heading-part">配置で小さくする</span>
+</h2>
+</div>
+<p><strong>リージョン</strong>はAWS基盤が置かれる地理的な領域です。各リージョンには複数の<strong>アベイラビリティーゾーン（AZ）</strong>があり、各AZには1つ以上の<span class="term">データセンター</span>があります。AZは独立した電源や<span class="term">ネットワーク</span>などを持つ<span class="term">障害境界です。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">リージョンの中にAZ、</span> <span class="label-part">AZの中に施設</span></strong><span class="diagram-kind"><span class="term">HIERARCHY</span></span>
+</div>
+<div class="diagram-body">
+<div class="placement-scope region-scope">
+<p class="scope-title"><span class="label-part">AWS Region｜</span> <span class="label-part">地理的な領域</span>
+</p>
+<div class="placement-grid">
+<div class="placement-scope az-scope">
+<p class="scope-title"><span class="label-part">AZ A｜</span> <span class="label-part">独立した</span> <span class="label-part">障害境界</span>
+</p>
+<div class="service network"><strong><span class="label-part">データセンター</span></strong><small><span class="label-part">1つ以上の施設</span></small>
+</div>
+</div>
+<div class="placement-scope az-scope">
+<p class="scope-title"><span class="label-part">AZ B｜</span> <span class="label-part">独立した</span> <span class="label-part">障害境界</span>
+</p>
+<div class="service network"><strong><span class="label-part">データセンター</span></strong><small><span class="label-part">1つ以上の施設</span></small>
+</div>
+</div>
+</div>
+<p>図では2つのAZを表示。リージョンは複数のAZで構成されます。
+</p>
+</div>
+</div>
+<figcaption>包含は配置の関係です。AZ間は離れて配置され、低<span class="term">レイテンシー</span>の<span class="term">ネットワーク</span>で<span class="term">つながります。</span>
+</figcaption>
+</figure>
+<div class="two-col">
+<div class="explain-card">
+<h3><span class="label-part">高可用性</span>
+</h3>
+<p>サービスを利用できる時間を長く保ち、停止時間を小さくする性質です。複数のAZへの配置は、1つのAZの障害への備えに<span class="term">なります。</span>
+</p>
+</div>
+<div class="explain-card">
+<h3><span class="label-part">耐障害性</span>
+</h3>
+<p>想定した障害が発生しても動作を継続できる性質です。必要な処理・データ・通信の各層に冗長性を<span class="term">組み込みます。</span>
+</p>
+</div>
+</div>
+<aside class="note "><strong><span class="label-part">補足：置くだけで、</span> <span class="label-part">切り替わるわけではない</span></strong>複数AZに同じサーバーを置くだけでは、自動復旧は完成しません。負荷分散、データの複製、切り替え、残った側の容量を<span class="term">設計します。</span>リージョン規模の災害に備える場合は、別リージョンへの復旧も<span class="term">検討します。</span>
+</aside><a class="source" href="https://aws.amazon.com/about-aws/global-infrastructure/regions_az/">公式資料：リージョンとAZ ↗</a>
+</section>
+<section id="responsibility" class="chapter" aria-labelledby="responsibility-title">
+<div class="section-title"><span class="section-number">04</span>
+<h2 id="responsibility-title"><span class="heading-part">AWSと利用者、</span> <span class="heading-part">それぞれの責任</span>
+</h2>
+</div>
+<p><strong>責任共有モデル</strong>では、AWSが「クラウド自体の<span class="term">セキュリティ」</span>を、<span class="term">利用者</span>が「クラウド内の<span class="term">セキュリティ」</span>を担います。任せる範囲は、使うサービスによって<span class="term">変わります。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">EC2を例に、</span> <span class="label-part">管理する層を分ける</span></strong><span class="diagram-kind"><span class="term">RESPONSIBILITY</span></span>
+</div>
+<div class="diagram-body">
+<div class="role-split">
+<div>
+<h3>AWSが管理する層
+</h3>
+<ul>
+<li><span class="term">データセンター</span>の物理的な保護
+</li>
+<li>ハードウェア・物理<span class="term">ネットワーク</span>
+</li>
+<li>ホストOS・仮想化基盤
+</li>
+</ul>
+</div>
+<div>
+<h3>利用者が管理する層
+</h3>
+<ul>
+<li>ゲストOSの更新とパッチ
+</li>
+<li><span class="term">アプリケーション</span>とデータ
+</li>
+<li>権限・通信許可・暗号化の設定
+</li>
+</ul>
+</div>
+</div>
+</div>
+<figcaption>EC2の例です。S3やDynamoDBのようなサービスでは、OSや基盤の管理をさらにAWSに<span class="term">任せられます。</span>
+</figcaption>
+</figure>
+<p>誰がどのデータにアクセスできるか、機密データをどう分類するか、暗号化をどう使うかは<span class="term">利用者</span>の<span class="term">判断です。</span>AWSの基盤が安全でも、過剰な権限や不適切な公開設定が自動的に解消されるわけ<span class="term">ではありません。</span>
+</p><a class="source" href="https://aws.amazon.com/compliance/shared-responsibility-model/">公式資料：責任共有モデル ↗</a>
+</section>
+<section id="example" class="chapter" aria-labelledby="example-title">
+<div class="section-title"><span class="section-number">05</span>
+<h2 id="example-title"><span class="heading-part">ECサイトで、</span> <span class="heading-part">設計の判断をつなぐ</span>
+</h2>
+</div>
+<p>海外にも<span class="term">利用者</span>がいるECサイトなら、まず顧客との距離と要件に合うリージョンを<span class="term">選びます。</span>次に複数AZへ構成を分散し、需要に合う容量を用意します。注文データや管理者権限の保護も、<span class="term">利用者</span>が担う設計です。
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">配置・容量・保護を、</span> <span class="label-part">別々に判断する</span></strong><span class="diagram-kind"><span class="term">DESIGN</span> <span class="term">DECISIONS</span></span>
+</div>
+<div class="diagram-body">
+<div class="catalog-grid">
+<div class="service network"><strong><span class="label-part">リージョンを選ぶ</span></strong><small><span class="label-part">顧客との距離・要件</span></small>
+</div>
+<div class="service network"><strong><span class="label-part">複数AZへ配置</span></strong><small><span class="label-part">障害時の継続を設計</span></small>
+</div>
+<div class="service compute"><strong><span class="label-part">必要な容量を用意</span></strong><small><span class="label-part">需要を測って調整</span></small>
+</div>
+<div class="service control"><strong><span class="label-part">データと権限を保護</span></strong><small><span class="label-part">利用者の責任を実行</span></small>
+</div>
+</div>
+</div>
+<figcaption>どれか1つを満たせば完成するわけ<span class="term">ではありません。</span>配置とアクセス権は<span class="term">異なる</span>設計上の<span class="term">判断です。</span>
+</figcaption>
+</figure>
+</section>
+<section id="review" class="chapter" aria-labelledby="review-title">
+<div class="section-title"><span class="section-number">06</span>
+<h2 id="review-title"><span class="heading-part">重要ポイントと、</span> <span class="heading-part">理解の確認</span>
+</h2>
+</div>
+<ul class="summary-list">
+<li>クラウドは、<span class="term">ネットワーク</span>経由で必要なITリソースを<span class="term">利用する</span>仕組み。
+</li>
+<li>6つの利点は、費用・容量・試行・運用・展開の課題に<span class="term">対応する。</span>
+</li>
+<li>リージョン → AZ → <span class="term">データセンター</span>という配置を<span class="term">区別する。</span>
+</li>
+<li>複数AZと責任共有モデルを、実際の構成・設定につなげる。
+</li>
+</ul>
+<div class="review-grid">
+<details>
+<summary>Q1. クラウドを使うと、サーバーは存在しなくなる？
+</summary>
+<p>存在します。物理基盤をAWSが管理し、<span class="term">利用者</span>はサービスを通じて<span class="term">使います。</span>
+</p>
+</details>
+<details>
+<summary>Q2. 複数AZに配置すれば、何も設定せず自動復旧できる？
+</summary>
+<p>できません。データの複製、負荷分散、切り替え、容量などの設計が<span class="term">必要です。</span>
+</p>
+</details>
+<details>
+<summary>Q3. EC2のゲストOSの更新と、データの権限管理は誰が担う？
+</summary>
+<p>どちらも<span class="term">利用者</span>です。AWSは物理基盤や仮想化基盤を<span class="term">管理します。</span>
+</p>
+</details>
+<details>
+<summary>Q4. 容量予測への依存が減っても、考えるべきことは？
+</summary>
+<p>現在の負荷、増減の条件、サービスの上限、起動時間、<span class="term">予算などです。</span>
+</p>
+</details>
+</div>
+</section>
+<section id="sources" class="chapter" aria-labelledby="sources-title">
+<div class="section-title"><span class="section-number">07</span>
+<h2 id="sources-title"><span class="heading-part">確認に使った、</span> <span class="heading-part">公式資料</span>
+</h2>
+</div>
+<p class="small">元データ：<span class="term">scripts</span>/<span class="term">module</span>.txt。提供されたトランスクリプトを意味のまとまりで再構成し、誤解しやすい箇所を以下のAWS公式資料で確認しました（2026年10月6日）。実際の操作・仕様・料金は最新版を<span class="term">確認してください。</span>
+</p>
+<ul class="sources-list">
+<li><a href="https://aws.amazon.com/compliance/shared-responsibility-model/">責任共有モデル</a>
+</li>
+<li><a href="https://aws.amazon.com/about-aws/global-infrastructure/regions_az/">グローバル基盤：リージョンとAZ</a>
+</li>
+</ul>
+</section>
+<nav class="module-nav" aria-label="モジュール間の移動"><span class="unavailable" aria-disabled="true">← <span class="term">Previous</span></span><a href="../index.html">Home</a><a href="module-02.html">Next · <span class="term">Module</span> 2 →</a>
+</nav>
+<footer class="footer">AWS <span class="term">STUDY</span> <span class="term">NOTES</span> / <span class="term">MODULE</span> 01<br>個人学習用の補助教材です。AWS公式教材<span class="term">ではありません。</span>図は概念の理解を目的とし、完全な構築手順を示すもの<span class="term">ではありません。</span>
+</footer>
+</main>
+</div>
+</body>
+</html>

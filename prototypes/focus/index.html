@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Module 2 | 3つの見せ方を比較</title>
+    <link rel="stylesheet" href="../../assets/css/style.css?v=20261006-4">
+    <link rel="stylesheet" href="../../assets/css/focus.css?v=20261006-focus-6">
+  </head>
+  <body class="focus">
+    <a class="skip-link" href="#main">本文へスキップ</a>
+    <header class="site-header"><a class="brand" href="../../index.html"><span class="brand-mark">a /</span> AWS STUDY NOTES</a><a class="header-link" href="../index.html">旧試作</a></header>
+    <main id="main" class="focus-main">
+      <header class="focus-intro">
+        <p class="eyebrow">MODULE 02 · FOCUSED COMPARISON</p>
+        <h1><span class="part">同じテーマを、</span> <span class="part">違う読み方で。</span></h1>
+        <p class="lead">CloudWatch・<span class="term">Auto Scaling</span>・ELBを扱う短いサンプルです。今回は、図の追い方・構成の見比べ方・答えを確認する動作を変えました。</p>
+      </header>
+      <div class="experiment-grid">
+        <a class="experiment-card" href="annotated.html">
+          <div class="preview preview-atlas" aria-hidden="true"><span class="p-node network">ELB</span><span>→</span><span class="preview-notes">① 送る先<br>② 観測<br>③ 台数</span><span class="p-node compute">EC2</span><span>←</span><span class="p-node control">制御</span></div>
+          <p class="eyebrow">01 / ANNOTATED MAP</p>
+          <h2>図への注釈</h2>
+          <p>構成図の中で矢印を追い、横にある説明で役割を理解する。</p>
+          <span class="card-link">図から読む →</span>
+        </a>
+        <a class="experiment-card" href="evolution.html">
+          <div class="preview preview-stages" aria-hidden="true"><span class="p-node compute">1台</span><span>→</span><span class="p-node compute">2台</span><span>→</span><span class="p-node network">分散</span></div>
+          <p class="eyebrow">02 / CONFIGURATION CHANGE</p>
+          <h2>構成の変化</h2>
+          <p>基本構成・台数だけの追加・改善後を比べ、必要になった理由を理解する。</p>
+          <span class="card-link">前後を比べる →</span>
+        </a>
+        <a class="experiment-card" href="questions.html">
+          <div class="preview preview-question" aria-hidden="true"><b>2台なら解決？</b><span>まず自分で考える</span><span>答えと理由を確認</span></div>
+          <p class="eyebrow">03 / THINK AND CHECK</p>
+          <h2>問いから確認</h2>
+          <p>図を見て判断してから説明を開き、役割の混同に気づく。</p>
+          <span class="card-link">問いに挑む →</span>
+        </a>
+      </div>
+      <section class="comparison-rules">
+        <h2>比較するポイント</h2>
+        <ul>
+          <li>3つのサービスの役割を、自分の言葉で説明できるか。</li>
+          <li>必要な説明へ迷わず戻れるか。</li>
+          <li>図・文章の量と、操作する手間はちょうどよいか。</li>
+        </ul>
+        <p class="space-before">色・本文サイズ・対象となる事実は揃えています。1つを選ぶほか、図への注釈を基本に、構成の変化と問いを適所で組み合わせられます。</p>
+      </section>
+      <div class="focus-end"><a href="../../index.html">← 教材ホームへ</a><a href="../index.html">旧試作の記録へ</a></div>
+      <footer class="footer">今回はModule 2の一部で見せ方を比較しています。選定後にModule 2全体へ展開します。Module 3以降の教材は作成していません。</footer>
+    </main>
+  </body>
+</html>

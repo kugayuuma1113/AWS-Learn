@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Module 2 / 01 役割を、 図の中で読む</title>
+    <link rel="stylesheet" href="../../assets/css/style.css?v=20261006-4">
+    <link rel="stylesheet" href="../../assets/css/focus.css?v=20261006-focus-6">
+  </head>
+  <body class="focus">
+    <a class="skip-link" href="#main">本文へスキップ</a>
+    <header class="site-header"><a class="brand" href="../../index.html"><span class="brand-mark">a /</span> AWS STUDY NOTES</a><a class="header-link" href="index.html">3案を比較</a></header>
+    <main id="main" class="focus-main ">
+      <div class="breadcrumb"><a href="index.html">見せ方の比較</a> / サンプル 01</div>
+      <nav class="focus-nav" aria-label="同じテーマの見せ方を比較"><a href="annotated.html" aria-current="page">01 図への注釈</a><a href="evolution.html">02 構成の変化</a><a href="questions.html">03 問いから確認</a></nav>
+      <header class="focus-intro">
+        <p class="eyebrow">MODULE 02 · 01</p>
+        <h1><span class="part">役割を、</span> <span class="part">図の中で読む</span></h1>
+        <p class="lead">CloudWatch・<span class="term">Auto Scaling</span>・ELBを、1つの構成の中で確認します。矢印の色と、サービスの横にある説明をたどってください。</p>
+        <div class="focus-guide">
+          <b>読み方</b>
+          <p>青い<span class="term">リクエスト</span>の経路から読み、次に紫と緑の制御の経路を追います。</p>
+        </div>
+      </header>
+      <figure>
+        <div class="atlas-board">
+          <svg class="atlas-graphic" viewBox="0 0 960 560" role="img" aria-labelledby="atlas-title atlas-desc">
+            <title id="atlas-title">ELB・CloudWatch・Auto Scalingの役割を注釈で読む</title>
+            <desc id="atlas-desc">利用者のリクエストはELBからEC2 AとBへ分岐する。EC2の観測値はCloudWatchへ送られ、アラームを用いてAuto Scalingがグループの台数を変更する。青がリクエスト、紫の破線が観測、緑が台数制御。番号は横の説明に対応する。</desc>
+            <defs>
+              <marker id="atlas-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0 0 L8 4 L0 8" fill="#23658a"/>
+              </marker>
+              <marker id="atlas-purple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0 0 L8 4 L0 8" fill="#7042a2"/>
+              </marker>
+              <marker id="atlas-green" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0 0 L8 4 L0 8" fill="#216b51"/>
+              </marker>
+            </defs>
+            <text x="502" y="28" text-anchor="middle" class="title">ユーザー</text>
+            <path class="request-route" d="M502 40 V81" marker-end="url(#atlas-blue)"/>
+            <rect x="388" y="90" width="228" height="90" rx="10" fill="#edf5fa" stroke="#23658a"/>
+            <text x="412" y="117" class="hint">01</text>
+            <text x="502" y="131" text-anchor="middle" class="title">ELB / ALB</text>
+            <text x="502" y="158" text-anchor="middle" class="hint">リクエストを分散</text>
+            <rect x="325" y="300" width="354" height="220" rx="12" fill="#fcfefc" stroke="#216b51" stroke-dasharray="6 5"/>
+            <text x="502" y="496" text-anchor="middle" class="hint">Auto Scalingグループ</text>
+            <rect x="348" y="377" width="142" height="80" rx="9" fill="#fff0dc" stroke="#a64d0b"/>
+            <rect x="514" y="377" width="142" height="80" rx="9" fill="#fff0dc" stroke="#a64d0b"/>
+            <text x="419" y="408" text-anchor="middle" class="title">EC2 A</text>
+            <text x="419" y="435" text-anchor="middle" class="hint">アプリを実行</text>
+            <text x="585" y="408" text-anchor="middle" class="title">EC2 B</text>
+            <text x="585" y="435" text-anchor="middle" class="hint">アプリを実行</text>
+            <path class="request-route" d="M502 180 V260 Q502 273 489 273 H431 Q419 273 419 285 V368" marker-end="url(#atlas-blue)"/>
+            <path class="request-route" d="M502 260 Q502 273 515 273 H573 Q585 273 585 285 V368" marker-end="url(#atlas-blue)"/>
+            <text x="560" y="230" text-anchor="middle" class="hint">振り分け</text>
+            <rect x="20" y="190" width="240" height="90" rx="10" fill="#f3edfa" stroke="#7042a2"/>
+            <text x="38" y="217" class="hint">02</text>
+            <text x="140" y="231" text-anchor="middle" class="title">CloudWatch</text>
+            <text x="140" y="258" text-anchor="middle" class="hint">メトリクス・アラーム</text>
+            <path class="metric-route" d="M348 404 H298 Q286 404 286 392 V247 Q286 235 274 235 H268" marker-end="url(#atlas-purple)"/>
+            <text x="140" y="164" text-anchor="middle" class="hint">EC2の観測値を受け取る</text>
+            <path class="metric-route" d="M140 280 V391" marker-end="url(#atlas-purple)"/>
+            <text x="162" y="346" class="hint">アラーム</text>
+            <rect x="20" y="400" width="240" height="90" rx="10" fill="#eaf5ed" stroke="#216b51"/>
+            <text x="38" y="427" class="hint">03</text>
+            <text x="140" y="441" text-anchor="middle" class="title">EC2 Auto Scaling</text>
+            <text x="140" y="468" text-anchor="middle" class="hint">ポリシーで台数を調整</text>
+            <path class="control-route" d="M260 445 H317" marker-end="url(#atlas-green)"/>
+            <text x="286" y="550" text-anchor="middle" class="hint">台数が変わる → EC2の負荷を再び観測</text>
+            <line class="divider" x1="710" y1="72" x2="710" y2="520"/>
+            <text x="738" y="104" class="title">01 どこへ送るか</text>
+            <text x="738" y="137" class="hint">共通の入口から、</text>
+            <text x="738" y="165" class="hint">複数のEC2へ送る。</text>
+            <text x="738" y="193" class="hint">新しい台も連携で登録。</text>
+            <text x="738" y="276" class="title">02 何が起きているか</text>
+            <text x="738" y="309" class="hint">CPUなどを観測する。</text>
+            <text x="738" y="337" class="hint">観測と増減は別の役割。</text>
+            <text x="738" y="420" class="title">03 何台にするか</text>
+            <text x="738" y="453" class="hint">需要に合わせて増減。</text>
+            <text x="738" y="481" class="hint">起動には時間が必要。</text>
+          </svg>
+          <div class="atlas-mobile">
+            <div class="client-pill">ユーザー</div>
+            <div class="path-label" data-role="network"><span aria-hidden="true">↓</span>リクエスト</div>
+            <div class="role-node network"><strong><span class="badge">01</span><span class="role-name">ELB / ALB</span></strong><small>リクエストを分散</small></div>
+            <p class="role-comment"><strong>どこへ送るか</strong>共通の入口から複数のEC2へ。新しい台も、連携設定により<span class="term">ターゲット</span>へ<span class="part">登録されます。</span></p>
+            <div class="path-label" data-role="network"><span aria-hidden="true">↓</span>複数のEC2へ振り分け</div>
+            <div class="machine-group">
+              <p><span class="term">Auto Scaling</span><span class="term">グループ</span></p>
+              <div class="machine-pair">
+                <div class="machine"><strong>EC2 A</strong><small>アプリを実行</small></div>
+                <div class="machine"><strong>EC2 B</strong><small>アプリを実行</small></div>
+              </div>
+            </div>
+            <div class="path-label" data-role="monitoring"><span aria-hidden="true">↓</span>EC2の観測値</div>
+            <div class="role-node monitoring"><strong><span class="badge">02</span><span class="role-name">CloudWatch</span></strong><small>メトリクス・アラーム</small></div>
+            <p class="role-comment"><strong>何が起きているか</strong>CPUなどの状態を観測します。観測することと、台数を変えることは<span class="part">別の役割です。</span></p>
+            <div class="path-label" data-role="monitoring"><span aria-hidden="true">↓</span>アラームを用いて制御</div>
+            <div class="role-node control"><strong><span class="badge">03</span><span class="role-name">EC2 Auto Scaling</span></strong><small>ポリシーで台数を調整</small></div>
+            <p class="role-comment"><strong>何台にするか</strong>需要に合わせて増減します。新しいEC2の起動には<span class="part">時間が必要です。</span></p>
+            <p class="return-path">↑ EC2<span class="term">グループ</span>の台数を変更し、その負荷を<span class="part">再び観測する。</span></p>
+          </div>
+        </div>
+        <figcaption class="atlas-caption"><span class="key"><b style="color:var(--color-network)">青</b><span class="term">リクエスト</span></span><span class="key"><b style="color:var(--color-monitoring)">紫</b>観測・<span class="term">アラーム</span></span><span class="key"><b style="color:var(--color-control)">緑</b>台数の制御</span></figcaption>
+      </figure>
+      <section class="atlas-observation">
+        <h2><span class="part">分散と増減を、</span> <span class="part">分けて考える</span></h2>
+        <p>ELBがあるだけで台数が増える<span class="part">わけではありません。</span><span class="term">Auto Scaling</span>で増やしただけでも、<span class="term">リクエスト</span>が適切に分かれるとは限りません。観測・台数の制御・<span class="term">リクエスト</span>の分散を<span class="part">組み合わせます。</span></p>
+      </section>
+      <section class="focus-foot" aria-labelledby="conditions-title">
+        <div class="focus-note">
+          <h2 id="conditions-title"><span class="part">増減には、</span> <span class="part">条件がある</span></h2>
+          <p>学習用の設定例は、最小2台・希望2台・最大6台、平均CPUの目標50%です。台数の増減は<span class="term">ポリシー</span>と上下限に従い、起動・<span class="term">ウォームアップ</span>には<span class="part">時間がかかります。</span>CPUが上がった瞬間に、必ず台数が増えるという意味ではありません。</p>
+          <p><span class="term">Auto Scaling</span><span class="term">グループ</span>とELBを連携させると、起動・終了に応じて<span class="term">ターゲット</span>が自動で登録・解除されます。ELBは<span class="term">ヘルスチェック</span>で状態を確かめ、通常は正常な<span class="term">ターゲット</span><span class="part">へ送ります。</span>アプリ側も複数台で処理を分担できる<span class="part">設計が必要です。</span></p>
+        </div>
+        <details>
+          <summary>確認したAWS公式資料</summary>
+          <ul class="sources-list">
+            <li><a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html"><span class="term">ターゲット</span>追跡：<span class="term">メトリクス</span>・目標値・<span class="term">ウォームアップ</span></a></li>
+            <li><a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/autoscaling-load-balancer.html"><span class="term">Auto Scaling</span>とELB：登録・解除と連携</a></li>
+          </ul>
+          <p>2026年10月6日に確認。Module 2のトランスクリプトをもとに再編集しています。図は概念図で、VPC・AZ・セキュリティ設定などは<span class="part">省略しています。</span></p>
+        </details>
+      </section>
+      <div class="focus-end"><a href="index.html">← 3案の比較へ</a><a href="../../modules/module-02.html#scaling">Module 2の既存本文へ</a></div>
+      <footer class="footer">同じテーマを異なる見せ方で比べる試作です。Module 2全体への採用は、比較後に決めます。</footer>
+    </main>
+  </body>
+</html>

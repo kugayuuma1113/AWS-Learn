@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="どこに置くか、どう届くか、何を通すか。VPC・サブネット・ルート・アクセス制御を分けて考え、外部との接続と配信につなげます。">
+<title>Module 5 | ネットワークを、境界と経路で理解する
+</title>
+<link rel="stylesheet" href="../assets/css/style.css?v=20261006-5">
+<link rel="stylesheet" href="../assets/css/curriculum.css?v=20261006-curriculum-5">
+<script src="../assets/js/main.js" defer></script>
+</head>
+<body><a class="skip-link" href="#main">本文へスキップ</a>
+<header class="site-header"><a class="brand" href="../index.html"><span class="brand-mark">a /</span>AWS STUDY NOTES</a><span class="header-meta">SKILL BUILDER · VISUAL LEARNING</span>
+</header>
+<div class="shell">
+<aside class="toc">
+<p class="eyebrow toc-title">IN THIS MODULE
+</p>
+<nav aria-label="このページの目次">
+<ol>
+<li><a href="#vpc"><span>01</span>VPCとサブネット</a>
+</li>
+<li><a href="#routes"><span>02</span>経路と公開の条件</a>
+</li>
+<li><a href="#filters"><span>03</span>SGとネットワークACL</a>
+</li>
+<li><a href="#connections"><span>04</span>VPNとDirect Connect</a>
+</li>
+<li><a href="#delivery"><span>05</span>DNSとコンテンツ配信</a>
+</li>
+<li><a href="#review"><span>06</span>重要ポイントと復習</a>
+</li>
+<li><a href="#sources"><span>07</span>公式資料</a>
+</li>
+</ol>
+</nav><a class="toc-home" href="../index.html">← 学習ホームへ</a>
+</aside>
+<main id="main" class="article">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <span class="term">Module</span> 05
+</div>
+<header class="hero">
+<p class="eyebrow"><span class="term">MODULE</span> 05 / <span class="term">NETWORKING</span>
+</p>
+<h1><span class="heading-part">ネットワークを、</span> <span class="heading-part">境界と経路で</span> <span class="heading-part">理解する</span>
+</h1>
+<p class="lead">どこに置くか、どう届くか、何を通すか。VPC・<span class="term">サブネット</span>・ルート・アクセス制御を分けて考え、外部との接続と配信に<span class="term">つなげます。</span>
+</p>
+<div class="hero-meta"><span class="tag">6つの学習セクション</span><span class="tag">図解＋比較表＋復習</span><span class="tag">公式資料確認：2026.10.06</span>
+</div>
+<div class="learning-goals">
+<h2>このModuleで学ぶこと
+</h2>
+<div class="goal-grid">
+<p><b>01</b><span>VPC・AZ・<span class="term">サブネット</span>の所属関係を<span class="term">説明する</span></span>
+</p>
+<p><b>02</b><span>公開<span class="term">サブネット</span>と経路・IPアドレスを<span class="term">区別する</span></span>
+</p>
+<p><b>03</b><span>SGと<span class="term">ネットワーク</span>ACLの評価の違いを<span class="term">理解する</span></span>
+</p>
+<p><b>04</b><span>VPN・<span class="term">Direct</span> <span class="term">Connect</span>・DNS・CDNの<span class="term">役割を分ける</span></span>
+</p>
+</div>
+</div>
+</header>
+<section id="vpc" class="chapter" aria-labelledby="vpc-title">
+<div class="section-title"><span class="section-number">01</span>
+<h2 id="vpc-title"><span class="heading-part">配置の境界を、</span> <span class="heading-part">入れ子でつかむ</span>
+</h2>
+</div>
+<p><strong><span class="term">Amazon</span> VPC</strong>は、AWS内に作る論理的に分離された<span class="term">ネットワーク</span>です。IPアドレス範囲、<span class="term">サブネット、</span>ルート、通信の許可を<span class="term">設定します。</span>VPCは1つのリージョンに属し、複数AZへ広げられます。<strong>1つの<span class="term">サブネット</span>は、必ず1つのAZに属します。</strong>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">VPCを分け、</span> <span class="label-part">AZごとに配置する</span></strong><span class="diagram-kind"><span class="term">HIERARCHY</span></span>
+</div>
+<div class="diagram-body">
+<div class="placement-scope ">
+<p class="scope-title"><span class="label-part">AWS Region</span>
+</p>
+<div class="placement-scope ">
+<p class="scope-title"><span class="label-part">Amazon VPC｜</span> <span class="label-part">10.0.0.0/16</span>
+</p>
+<div class="placement-grid">
+<div class="placement-scope az-scope">
+<p class="scope-title"><span class="label-part">AZ A</span>
+</p>
+<div class="service network"><strong><span class="label-part">パブリック</span> <span class="label-part">サブネット</span></strong><small><span class="label-part">10.0.3.0/24｜</span> <span class="label-part">IGWへの</span> <span class="label-part">経路あり</span></small>
+</div>
+<div class="service network"><strong><span class="label-part">プライベート</span> <span class="label-part">サブネット</span></strong><small><span class="label-part">10.0.1.0/24｜</span> <span class="label-part">IGWへの</span> <span class="label-part">直接経路なし</span></small>
+</div>
+</div>
+<div class="placement-scope az-scope">
+<p class="scope-title"><span class="label-part">AZ B</span>
+</p>
+<div class="service network"><strong><span class="label-part">パブリック</span> <span class="label-part">サブネット</span></strong><small><span class="label-part">10.0.4.0/24｜</span> <span class="label-part">IGWへの</span> <span class="label-part">経路あり</span></small>
+</div>
+<div class="service network"><strong><span class="label-part">プライベート</span> <span class="label-part">サブネット</span></strong><small><span class="label-part">10.0.2.0/24｜</span> <span class="label-part">IGWへの</span> <span class="label-part">直接経路なし</span></small>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<figcaption>トランスクリプトの構築例を、同じリージョンのAZ A・Bに統一して表示。CIDRの/16・/24はアドレス範囲の広さを表し、<span class="term">サブネット</span>はVPCの範囲内で重複しないようにします。
+</figcaption>
+</figure>
+<p>パブリック／プライベートの違いは、名前ではなくルートです。インターネット<span class="term">ゲートウェイ</span>（IGW）への直接の経路を持つ<span class="term">サブネット</span>がパブリック<span class="term">サブネット</span>です。
+</p>
+</section>
+<section id="routes" class="chapter" aria-labelledby="routes-title">
+<div class="section-title"><span class="section-number">02</span>
+<h2 id="routes-title"><span class="heading-part">宛先に応じて、</span> <span class="heading-part">次の行き先を決める</span>
+</h2>
+</div>
+<p><strong>ルートテーブル</strong>は、宛先IPアドレスに対する転送先を定義します。複数の経路に一致すれば、より具体的な宛先の経路を<span class="term">使います。</span>
+</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="パブリックサブネットのルート例。狭い画面では横にスクロールできます">
+<table>
+<caption>パブリック<span class="term">サブネット</span>のルート例
+</caption>
+<thead>
+<tr>
+<th scope="col">宛先
+</th>
+<th scope="col">転送先
+</th>
+<th scope="col">意味
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">10.0.0.0/16
+</th>
+<td><span class="term">local</span>
+</td>
+<td>VPC内の通信を届ける
+</td>
+</tr>
+<tr>
+<th scope="row">0.0.0.0/0
+</th>
+<td>インターネット<span class="term">ゲートウェイ</span>
+</td>
+<td>より具体的な経路がないIPv4宛先へ送る
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">公開IPv4でEC2へ、</span> <span class="label-part">到達するための条件</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service neutral"><strong><span class="label-part">インターネット</span></strong><small><span class="label-part">公開IPへアクセス</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service network"><strong><span class="label-part">IGWとルート</span></strong><small><span class="label-part">VPCへ接続・経路を設定</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service compute"><strong><span class="label-part">EC2</span></strong><small><span class="label-part">公開IPv4と通信許可</span></small>
+</div>
+</div>
+</div>
+<figcaption>概念上の要求の向きです。公開IPv4には自動割り当てやElastic IPを<span class="term">利用します。</span>SG・ACL・OS・アプリ側の設定も通信に影響します。
+</figcaption>
+</figure>
+<aside class="note important"><strong><span class="label-part">重要：パブリックでも、</span> <span class="label-part">自動では公開されない</span></strong>IGWをVPCに接続し、対象<span class="term">サブネット</span>のルートに<span class="term">設定する</span>だけでなく、EC2には公開IPv4アドレスと通信許可が<span class="term">必要です。</span>「パブリック<span class="term">サブネット」</span>という名前だけで到達できるわけ<span class="term">ではありません。</span>
+</aside>
+<aside class="note "><strong><span class="label-part">補足：プライベートからの、</span> <span class="label-part">外向き通信</span></strong>直接IGWへ向かわなくても、NAT<span class="term">ゲートウェイ</span>などを経由して外へ通信できます。<span class="term">対応する</span>AWSサービスにはVPCエンドポイントで<span class="term">接続する</span>方法もあります。これは「外部から直接接続できること」と<span class="term">別です。</span>
+</aside><a class="source" href="https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html">公式資料：インターネット<span class="term">ゲートウェイ</span> ↗</a>
+</section>
+<section id="filters" class="chapter" aria-labelledby="filters-title">
+<div class="section-title"><span class="section-number">03</span>
+<h2 id="filters-title"><span class="heading-part">通信の許可を、</span> <span class="heading-part">2つの層で確認する</span>
+</h2>
+</div>
+<p><strong><span class="term">セキュリティ</span>グループ（SG）</strong>は、EC2などの<span class="term">ネットワーク</span>インターフェイスに適用する許可ルールです。<strong><span class="term">ネットワーク</span>ACL</strong>は、<span class="term">サブネット</span>境界で<span class="term">評価する</span>許可・拒否ルールです。必要な通信が両方を通れるか<span class="term">確認します。</span>
+</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="通信フィルターの比較。狭い画面では横にスクロールできます">
+<table>
+<caption>通信フィルターの比較
+</caption>
+<thead>
+<tr>
+<th scope="col">項目
+</th>
+<th scope="col"><span class="term">セキュリティ</span>グループ
+</th>
+<th scope="col"><span class="term">ネットワーク</span>ACL
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">適用先
+</th>
+<td><span class="term">ネットワーク</span>インターフェイス／リソース
+</td>
+<td><span class="term">サブネット</span>
+</td>
+</tr>
+<tr>
+<th scope="row">ルール
+</th>
+<td>許可のみ。該当する許可があるか評価
+</td>
+<td>許可と拒否。小さい番号から順に評価
+</td>
+</tr>
+<tr>
+<th scope="row">接続の記憶
+</th>
+<td>ステートフル：許可した接続の応答は自動許可
+</td>
+<td>ステートレス：応答も別のルールで評価
+</td>
+</tr>
+<tr>
+<th scope="row">用途
+</th>
+<td>アプリやDBに必要な通信を許可
+</td>
+<td><span class="term">サブネット</span>全体の通信を制御
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">要求と応答を、</span> <span class="label-part">往復で考える</span></strong><span class="diagram-kind"><span class="term">ROUND</span> TRIP</span>
+</div>
+<div class="diagram-body diagram-scroll" tabindex="0" role="region" aria-label="図の横スクロール領域">
+<svg class="svg-diagram" viewBox="0 0 900 370" role="img" aria-labelledby="packet-name packet-desc">
+<title id="packet-name">往路と復路で異なる、セキュリティグループとネットワークACLの確認
+</title>
+<desc id="packet-desc">クライアントからサブネット境界のネットワークACLを通り、EC2のセキュリティグループへ。許可された接続の応答は逆方向へ戻ります。ネットワークACLには復路の許可も必要です。
+</desc>
+<defs>
+<marker id="packet-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+<path d="M0 0 L10 5 L0 10 Z" fill="#23658a"/>
+</marker>
+<marker id="packet-return" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+<path d="M0 0 L10 5 L0 10 Z" fill="#216b51"/>
+</marker>
+</defs>
+<rect class="network-box" x="268" y="24" width="608" height="320" rx="14"/>
+<text x="292" y="56" class="svg-title">サブネット
+</text>
+<rect class="neutral-box" x="24" y="106" width="190" height="130" rx="10"/>
+<text x="119" y="147" text-anchor="middle" class="svg-title">クライアント
+</text>
+<text x="119" y="179" text-anchor="middle">接続を開始
+</text>
+<rect class="network-box" x="304" y="106" width="214" height="130" rx="10"/>
+<text x="411" y="144" text-anchor="middle" class="svg-title">ネットワークACL
+</text>
+<text x="411" y="173" text-anchor="middle">境界で許可・拒否
+</text>
+<text x="411" y="201" text-anchor="middle">往路・復路の両方を評価
+</text>
+<rect class="compute-box" x="622" y="106" width="220" height="130" rx="10"/>
+<text x="732" y="144" text-anchor="middle" class="svg-title">EC2
+</text>
+<text x="732" y="173" text-anchor="middle">セキュリティグループ
+</text>
+<text x="732" y="201" text-anchor="middle">許可した接続を記憶
+</text>
+<path class="route-line" d="M214 132 H296" marker-end="url(#packet-arrow)"/>
+<path class="route-line" d="M518 132 H614" marker-end="url(#packet-arrow)"/>
+<path class="return-line" d="M622 215 H526" marker-end="url(#packet-return)"/>
+<path class="return-line" d="M304 215 H222" marker-end="url(#packet-return)"/>
+<text x="458" y="88" text-anchor="middle">→ 接続要求（往路）
+</text>
+<text x="466" y="276" text-anchor="middle">← 応答（復路）：ACLの許可が必要
+</text>
+<text x="466" y="307" text-anchor="middle">SGでは、許可された接続の応答を自動で許可
+</text>
+</svg>
+</div>
+<figcaption>実線は要求、破線は応答。SGが応答を許可しても、<span class="term">ネットワーク</span>ACLで拒否されれば戻れません。実際には通信相手側のSG・ACLも<span class="term">確認します。</span>
+</figcaption>
+</figure>
+<aside class="note "><strong><span class="label-part">補足：初期ルールを、</span> <span class="label-part">確認して使う</span></strong>新規SGは通常、受信の許可なし・送信は許可という初期状態です。デフォルトSGには同じSG内からの受信許可もあります。デフォルトACLと新規カスタムACLにも初期ルールの差があります。ACLでは、応答に使う一時ポートの許可も<span class="term">確認します。</span>
+</aside><a class="source" href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html">公式資料：<span class="term">セキュリティ</span>グループ ↗</a><a class="source" href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html">公式資料：<span class="term">ネットワーク</span>ACL ↗</a>
+</section>
+<section id="connections" class="chapter" aria-labelledby="connections-title">
+<div class="section-title"><span class="section-number">04</span>
+<h2 id="connections-title"><span class="heading-part">外部の</span> <span class="heading-part">ネットワークと、</span> <span class="heading-part">安全につなぐ</span>
+</h2>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="接続の用途から選ぶ。狭い画面では横にスクロールできます">
+<table>
+<caption>接続の用途から選ぶ
+</caption>
+<thead>
+<tr>
+<th scope="col">方式
+</th>
+<th scope="col"><span class="term">接続する</span>もの
+</th>
+<th scope="col">特徴・注意点
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row"><span class="term">Site-to-Site</span> VPN
+</th>
+<td>拠点の<span class="term">ネットワーク</span> ↔ VPCなど
+</td>
+<td>インターネットなどを通るIPsecの暗号化接続
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Client</span> VPN
+</th>
+<td><span class="term">利用者</span>の端末 ↔ AWSや社内<span class="term">ネットワーク</span>
+</td>
+<td>リモート<span class="term">利用者</span>向けのVPN。拠点間VPNとは別
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Direct</span> <span class="term">Connect</span>
+</th>
+<td>拠点の<span class="term">ネットワーク</span> ↔ AWS
+</td>
+<td>専用の<span class="term">ネットワーク</span>接続。インターネット経由のVPNと<span class="term">異なる</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">拠点とVPCを、</span> <span class="label-part">ゲートウェイ経由で</span> <span class="label-part">接続する</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service neutral"><strong><span class="label-part">拠点ネットワーク</span></strong><small><span class="label-part">ルーターなどを用意</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service network"><strong><span class="label-part">VPN接続</span></strong><small><span class="label-part">IPsecで暗号化</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service network"><strong><span class="label-part">VGW / VPC</span></strong><small><span class="label-part">仮想プライベートGW</span> <span class="label-part">など</span></small>
+</div>
+</div>
+</div>
+<figcaption><span class="term">Site-to-Site</span> VPNの概念例です。VGWはVPC側の接続先の1つで、構成によってTransit Gatewayなども<span class="term">使います。</span>端末のClient VPNとは<span class="term">異なります。</span>
+</figcaption>
+</figure>
+<aside class="note important"><strong><span class="label-part">重要：専用線と暗号化は、</span> <span class="label-part">別の性質</span></strong><span class="term">Direct</span> Connectは、標準で通信内容を暗号化するサービス<span class="term">ではありません。</span>暗号化が必要なら、対応接続でのMACsecやVPNなどを<span class="term">検討します。</span>VPNを<span class="term">バックアップ</span>にする場合も、経路と切り替えを設定・検証します。
+</aside><a class="source" href="https://docs.aws.amazon.com/directconnect/latest/UserGuide/encryption-in-transit.html">公式資料：<span class="term">Direct</span> Connectの転送中の暗号化 ↗</a>
+</section>
+<section id="delivery" class="chapter" aria-labelledby="delivery-title">
+<div class="section-title"><span class="section-number">05</span>
+<h2 id="delivery-title"><span class="heading-part">接続先を調べ、</span> <span class="heading-part">コンテンツを取得する</span>
+</h2>
+</div>
+<p><strong>DNS</strong>は、ドメイン名に<span class="term">対応する</span>IPアドレスなどを調べる仕組みです。<span class="term">Route</span> 53は権威DNSなどを<span class="term">提供します。</span>ブラウザーが常にRoute 53へ直接問い合わせるわけではなく、通常はDNSリゾルバーを通し、<span class="term">キャッシュ</span>も<span class="term">使います。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">① 名前解決：</span> <span class="label-part">接続先を知る</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service neutral"><strong><span class="label-part">クライアント</span></strong><small><span class="label-part">名前を問い合わせる</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service network"><strong><span class="label-part">DNSリゾルバー</span></strong><small><span class="label-part">キャッシュ・問い合わせ</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service network"><strong><span class="label-part">Route 53</span></strong><small><span class="label-part">権威DNSとして応答</span></small>
+</div>
+</div>
+</div>
+<figcaption>問い合わせ先をたどる概念図。必要に応じてルートDNSなども参照します。DNS応答で接続先を得る段階です。
+</figcaption>
+</figure>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">② HTTPS通信：</span> <span class="label-part">コンテンツを受け取る</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service neutral"><strong><span class="label-part">クライアント</span></strong><small><span class="label-part">コンテンツを要求</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service network"><strong><span class="label-part">CloudFront</span></strong><small><span class="label-part">エッジで配信・キャッシュ</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service data"><strong><span class="label-part">オリジン</span></strong><small><span class="label-part">S3やWebサーバー</span></small>
+</div>
+</div>
+</div>
+<figcaption>CloudFrontを<span class="term">利用する</span>構成例。<span class="term">キャッシュ</span>にあればエッジから返し、なければオリジンから<span class="term">取得します。</span>すべてのサイトがCloudFrontを通るわけ<span class="term">ではありません。</span>
+</figcaption>
+</figure>
+<p><span class="term">Route</span> 53のルーティングポリシーは、地理的位置、<span class="term">レイテンシー、</span>重みなどでDNS応答を<span class="term">選びます。</span><span class="term">「利用者</span>の地域に応じること」と「測定された<span class="term">レイテンシー</span>に応じること」は<span class="term">異なる</span>方式です。CloudFrontは実際の配信を<span class="term">担当します。</span>
+</p><a class="source" href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html">公式資料：DNSルーティングポリシー ↗</a><a class="source" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/HowCloudFrontWorks.html">公式資料：CloudFrontによる配信 ↗</a>
+</section>
+<section id="review" class="chapter" aria-labelledby="review-title">
+<div class="section-title"><span class="section-number">06</span>
+<h2 id="review-title"><span class="heading-part">重要ポイントと、</span> <span class="heading-part">理解の確認</span>
+</h2>
+</div>
+<ul class="summary-list">
+<li>VPCはリージョン内、<span class="term">サブネット</span>は1つのAZ内に作る。
+</li>
+<li>公開への到達には、経路・公開アドレス・通信許可が必要。
+</li>
+<li>SGはステートフル、ACLはステートレス。要求と応答を分けて<span class="term">確認する。</span>
+</li>
+<li>VPNは暗号化接続、<span class="term">Direct</span> Connectは専用接続。DNSとCDNも<span class="term">役割が違う。</span>
+</li>
+</ul>
+<div class="review-grid">
+<details>
+<summary>Q1. <span class="term">サブネット</span>をパブリックと名付けたら、EC2へ接続できる？
+</summary>
+<p>できません。IGWへの経路、EC2の公開アドレス、SG・ACLなどの許可を<span class="term">確認します。</span>
+</p>
+</details>
+<details>
+<summary>Q2. SGが要求を許可したら、ACLの復路ルールは不要？
+</summary>
+<p><span class="term">必要です。</span>ACLは接続を記憶しないため、応答も個別に<span class="term">評価します。</span>
+</p>
+</details>
+<details>
+<summary>Q3. <span class="term">Direct</span> Connectなら、通信は必ず暗号化される？
+</summary>
+<p>いいえ。専用接続と暗号化は別です。必要な方式を追加で<span class="term">検討します。</span>
+</p>
+</details>
+<details>
+<summary>Q4. <span class="term">Route</span> 53がWebページの画像やHTMLを<span class="term">配信する？</span>
+</summary>
+<p>通常はDNS情報を返す役割です。コンテンツ配信はCloudFrontやオリジンが<span class="term">行います。</span>
+</p>
+</details>
+</div>
+</section>
+<section id="sources" class="chapter" aria-labelledby="sources-title">
+<div class="section-title"><span class="section-number">07</span>
+<h2 id="sources-title"><span class="heading-part">確認に使った、</span> <span class="heading-part">公式資料</span>
+</h2>
+</div>
+<p class="small">元データ：<span class="term">scripts</span>/<span class="term">module5</span>.txt。提供されたトランスクリプトを意味のまとまりで再構成し、誤解しやすい箇所を以下のAWS公式資料で確認しました（2026年10月6日）。実際の操作・仕様・料金は最新版を<span class="term">確認してください。</span>
+</p>
+<ul class="sources-list">
+<li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html">IGWとパブリック<span class="term">サブネット</span></a>
+</li>
+<li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"><span class="term">セキュリティ</span>グループ</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html"><span class="term">ネットワーク</span>ACL</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/directconnect/latest/UserGuide/encryption-in-transit.html"><span class="term">Direct</span> Connectと暗号化</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html"><span class="term">Route</span> 53のポリシー</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/HowCloudFrontWorks.html">CloudFrontの配信</a>
+</li>
+</ul>
+</section>
+<nav class="module-nav" aria-label="モジュール間の移動"><a href="module-04.html">← <span class="term">Previous</span> · <span class="term">Module</span> 4</a><a href="../index.html">Home</a><a href="module-06.html">Next · <span class="term">Module</span> 6 →</a>
+</nav>
+<footer class="footer">AWS <span class="term">STUDY</span> <span class="term">NOTES</span> / <span class="term">MODULE</span> 05<br>個人学習用の補助教材です。AWS公式教材<span class="term">ではありません。</span>図は概念の理解を目的とし、完全な構築手順を示すもの<span class="term">ではありません。</span>
+</footer>
+</main>
+</div>
+</body>
+</html>

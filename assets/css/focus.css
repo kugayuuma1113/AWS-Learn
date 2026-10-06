@@ -1,0 +1,201 @@
+/* The three experiments share type and meaning, not a chapter layout. */
+.focus { --focus-width: 1200px; }
+.focus .site-header { position: static; }
+.focus-main { max-width:var(--focus-width); margin:auto; padding:32px 32px 56px; }
+.focus-nav { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 32px; }
+.focus-nav a { padding:8px 14px; border:1px solid var(--line); border-radius:6px; background:white; text-decoration:none; font-size:14px; white-space:nowrap; }
+.focus-nav a[aria-current="page"] { background:var(--ink); color:white; border-color:var(--ink); }
+.focus .breadcrumb { margin-bottom:12px; }
+.focus-intro { margin-bottom:32px; }
+.focus-intro .eyebrow { margin-bottom:10px; letter-spacing:.08em; }
+.focus h1 { font-size:clamp(26px,3.2vw,38px); line-height:1.55; letter-spacing:-.025em; }
+.focus h2 { font-size:24px; letter-spacing:0; }
+.focus h3 { font-size:19px; }
+.focus-intro .lead { margin-top:14px; font-size:16px; max-width:46em; }
+.focus .part { display:inline-block; white-space:nowrap; }
+.focus .role-name { display:inline-block; white-space:nowrap; }
+.focus p,.focus li,.focus figcaption { text-wrap:pretty; }
+.focus-guide { display:flex; gap:12px; align-items:baseline; padding:14px 0; border-block:1px solid var(--line); margin-top:24px; font-size:14px; }
+.focus-guide b { flex-shrink:0; }
+.focus-guide p { color:var(--muted); }
+.focus-note { padding:20px 0; border-bottom:1px solid var(--line); }
+.focus-note p { margin-top:10px; font-size:15px; max-width:50em; }
+.focus-foot { margin-top:40px; }
+.focus-foot details { margin-top:20px; }
+.focus-foot .sources-list { margin-bottom:0; }
+.focus-end { display:flex; flex-wrap:wrap; gap:18px; margin-top:28px; }
+.focus-end a { font-size:14px; }
+.focus .footer { margin-top:32px; }
+.experiment-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; margin:32px 0; }
+.experiment-card { padding:24px; border:1px solid var(--line); border-radius:12px; background:white; display:flex; flex-direction:column; text-decoration:none; color:var(--ink); }
+.experiment-card:hover { background:#f3f5f5; color:var(--ink); }
+.experiment-card h2 { font-size:23px; margin:18px 0 12px; }
+.experiment-card p { font-size:15px; }
+.experiment-card .card-link { margin-top:auto; padding-top:20px; }
+.preview { height:150px; display:flex; align-items:center; justify-content:center; gap:12px; background:#f6f7f8; border-radius:8px; padding:16px; color:var(--ink); }
+.preview .p-node { width:60px; height:42px; border:1px solid; display:grid; place-items:center; font-size:12px; border-radius:6px; }
+.preview-atlas { display:grid; grid-template-columns:50px 20px 90px; }
+.preview-atlas .p-node { width:50px; }
+.preview-notes { font-size:12px; line-height:2; }
+.preview-stages { gap:8px; }
+.preview-stages .p-node { width:48px; height:70px; }
+.preview-question { flex-direction:column; gap:8px; }
+.preview-question b { font-size:22px; }
+.preview-question span { font-size:12px; padding:4px 20px; border:1px solid var(--line); border-radius:4px; background:white; }
+.comparison-rules { max-width:48em; }
+.comparison-rules h2 { margin-bottom:12px; }
+.comparison-rules ul { padding-left:22px; margin:0; }
+.comparison-rules li { padding:4px 0; }
+/* 01: one annotated canvas, with request and control paths distinguished. */
+.atlas-board { background:white; border:1px solid var(--line); border-radius:14px; padding:20px; }
+.atlas-graphic { display:block; width:100%; height:auto; }
+.atlas-graphic text { font-family:var(--font); fill:var(--ink); font-size:17px; }
+.atlas-graphic .hint { font-size:17px; fill:var(--muted); }
+.atlas-graphic .title { font-weight:700; }
+.atlas-graphic .metric-route { stroke:var(--color-monitoring); stroke-dasharray:6 5; fill:none; stroke-width:2; }
+.atlas-graphic .request-route { stroke:var(--color-network); fill:none; stroke-width:2; }
+.atlas-graphic .control-route { stroke:var(--color-control); fill:none; stroke-width:2; }
+.atlas-graphic .divider { stroke:var(--line); }
+.atlas-mobile { display:none; }
+.atlas-caption { font-size:14px; padding:18px 4px 0; color:var(--muted); }
+.atlas-caption .key { display:inline-block; margin-right:16px; }
+.atlas-caption .key b { padding-right:5px; }
+.atlas-observation { margin-top:22px; padding:20px 0; border-block:1px solid var(--line); }
+.atlas-observation p { max-width:48em; margin-top:10px; }
+.role-node { padding:18px; border:1px solid; border-radius:9px; text-align:center; }
+.role-node strong { display:block; font-size:17px; }
+.role-node small { display:block; margin-top:6px; color:inherit; font-size:14px; }
+.role-comment { padding:14px 8px 0; font-size:15px; }
+.role-comment strong { display:block; margin-bottom:4px; }
+.badge { display:inline-grid; place-items:center; width:26px; height:26px; font-size:13px; border:1px solid; border-radius:50%; vertical-align:middle; margin-right:7px; }
+.path-label { text-align:center; color:var(--muted); font-size:14px; padding:10px 0; }
+.path-label span { display:block; font-size:22px; line-height:1.3; }
+.path-label[data-role="network"] { color:var(--color-network); }
+.path-label[data-role="monitoring"] { color:var(--color-monitoring); }
+.machine-pair { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.machine { padding:16px 8px; border:1px solid var(--color-compute); background:var(--bg-compute); color:var(--color-compute); border-radius:8px; text-align:center; }
+.machine strong { display:block; font-size:16px; white-space:nowrap; }
+.machine small { display:block; font-size:14px; margin-top:4px; color:inherit; }
+.machine-group { border:1px dashed var(--color-control); padding:16px; border-radius:10px; background:#fcfefc; }
+.machine-group>p { font-size:14px; font-weight:600; margin-bottom:12px; color:var(--color-control); }
+.return-path { font-size:15px; color:var(--color-control); border-left:2px solid var(--color-control); margin:18px 0 0; padding:8px 14px; }
+/* 02: the configuration itself changes from panel to panel. */
+.stages { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; align-items:stretch; }
+.stage { background:white; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.stage-head { padding:22px 22px 18px; border-bottom:1px solid var(--line); }
+.stage-index { display:block; font-size:13px; color:var(--muted); margin-bottom:10px; }
+.stage h2 { font-size:23px; }
+.stage h3 { font-size:17px; }
+.snapshot { padding:22px; min-height:430px; }
+.client-pill { margin:auto; padding:8px 14px; border-radius:30px; border:1px solid var(--line); background:#f5f6f7; text-align:center; font-size:14px; max-width:180px; }
+.snapshot .path-label { padding:8px 0; }
+.snapshot .role-node { padding:14px; }
+.busy { background:#fff4ed; }
+.load-tag { display:block; font-size:13px; margin-top:8px; }
+.load-tag.hot { color:#984209; }
+.idle { background:#f8f9fa; border-style:dashed; color:var(--muted); }
+/* A single connection ends at EC2 A, not between A and the unused B. */
+.target-a-route { position:relative; height:64px; color:var(--muted); }
+.target-a-route::before { content:""; position:absolute; top:0; left:25%; right:50%; height:22px; border-right:2px solid; border-bottom:2px solid; }
+.target-a-route::after { content:""; position:absolute; top:22px; left:calc(25% - 1px); height:30px; border-left:2px solid; }
+.target-a-route span { position:absolute; top:50px; left:calc(25% - 6px); border-left:6px solid transparent; border-right:6px solid transparent; border-top:9px solid var(--muted); }
+.target-a-route small { position:absolute; top:15px; left:calc(50% + 10px); font-size:14px; white-space:nowrap; }
+.stage-point { padding:22px; border-top:1px solid var(--line); }
+.stage-point p { font-size:15px; margin-top:8px; }
+.stage-point strong { display:block; font-size:16px; }
+.stage .machine-pair { gap:10px; }
+.stage .machine { padding:14px 4px; }
+.stage-summary { display:grid; grid-template-columns:1fr 1fr; gap:30px; padding:30px 0; border-bottom:1px solid var(--line); }
+.stage-summary h2 { font-size:22px; margin-bottom:10px; }
+.stage-summary p { font-size:15px; }
+.control-detail { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px; max-width:760px; margin:26px auto; }
+.control-detail figcaption { grid-column:1 / -1; font-size:15px; text-align:center; color:var(--color-control); }
+/* 03: decide first; reveal only the explanation you need. */
+.question-page { max-width:920px; }
+.question { margin:34px 0; padding:30px; background:white; border:1px solid var(--line); border-radius:12px; }
+.question-top { display:grid; grid-template-columns:1fr 280px; gap:36px; align-items:start; }
+.question-kicker { font-size:13px; color:var(--muted); margin-bottom:10px; }
+.question h2 { font-size:25px; }
+.question-prompt { margin-top:14px; font-size:16px; }
+.choices { padding-left:22px; font-size:15px; margin-bottom:0; }
+.choices li { padding:3px 0; }
+.question-image { margin:0; }
+.question-image .machine-pair { gap:10px; }
+.question-image .role-node { padding:14px 8px; }
+.question-image .role-node strong { font-size:16px; }
+.question-image figcaption { font-size:13px; color:var(--muted); margin-top:12px; }
+.question details { margin-top:24px; background:#fafbf9; padding:0; }
+.question summary { padding:16px 18px; font-size:16px; }
+.answer { border-top:1px solid var(--line); padding:18px; }
+.answer h3 { margin:0 0 10px; font-size:18px; }
+.question .answer p { font-size:16px; color:var(--ink); margin:10px 0 0; }
+.answer .answer-fact { font-size:15px; padding:12px 0 0; color:var(--muted); }
+.question .answer .role-node { margin-top:16px; }
+.ready-line { display:flex; flex-direction:column; align-items:stretch; gap:8px; text-align:center; }
+.ready-line span:not(.path-arrow) { padding:12px; border:1px solid var(--line); border-radius:8px; font-size:14px; }
+.path-arrow { font-size:20px; line-height:1.2; color:var(--muted); }
+.reflection { border-block:1px solid var(--line); padding:24px 0; }
+.reflection h2 { font-size:22px; margin-bottom:12px; }
+.reflection p { margin-top:10px; }
+@media(max-width:1100px) {
+  .stages { grid-template-columns:1fr; }
+  .stage { display:grid; grid-template-columns:200px minmax(280px,1fr) minmax(180px,.8fr); align-items:start; }
+  .stage-head { border-bottom:0; padding:24px; }
+  .snapshot { min-height:0; max-width:400px; width:100%; }
+  .stage-point { border-top:0; padding:24px; }
+  .experiment-grid { grid-template-columns:1fr; }
+  .experiment-card { display:grid; grid-template-columns:230px 1fr; gap:0 28px; }
+  .experiment-card .preview { grid-row:1 / 5; height:100%; min-height:170px; }
+  .experiment-card h2 { margin-top:8px; }
+}
+@media(max-width:900px) {
+  .atlas-graphic { display:none; }
+  .atlas-mobile { display:block; max-width:580px; margin:auto; }
+  .stage { grid-template-columns:1fr; }
+  .stage-head { border-bottom:1px solid var(--line); }
+  .snapshot { margin:auto; }
+  .stage-point { border-top:1px solid var(--line); }
+  .stage-summary { grid-template-columns:1fr; gap:22px; }
+  .question-top { grid-template-columns:1fr; gap:22px; }
+  .question-image { max-width:340px; width:100%; margin:auto; }
+}
+@media(max-width:600px) {
+  .focus-main { padding:24px 20px 40px; }
+  .focus .brand { font-size:12px; }
+  .focus .site-header { padding:0 20px; }
+  .focus .header-link { font-size:13px; white-space:nowrap; }
+  .focus-nav { gap:6px; margin-bottom:26px; }
+  .focus-nav a { padding:8px 10px; font-size:13px; }
+  .focus-guide { display:block; }
+  .focus-guide p { margin-top:6px; }
+  .focus h1 { font-size:27px; }
+  .focus h2 { font-size:23px; }
+  .focus-intro .eyebrow { font-size:11px; }
+  .atlas-board { padding:18px; }
+  .role-node { padding:16px 10px; }
+  .role-node strong { font-size:16px; }
+  .machine-group { padding:12px; }
+  .machine-pair { gap:10px; }
+  .machine { padding:14px 4px; }
+  .experiment-card { display:flex; padding:22px; gap:0; }
+  .experiment-card .preview { height:150px; min-height:150px; }
+  .experiment-card h2 { margin-top:20px; }
+  .question { padding:20px; }
+  .question h2 { font-size:23px; }
+  .question details { margin-top:22px; }
+  .question .answer p { font-size:15px; }
+  .stage-head,.stage-point,.snapshot { padding:20px; }
+  .stage h2 { font-size:22px; }
+  .control-detail { grid-template-columns:1fr; }
+  .control-detail .path-label span { transform:rotate(90deg); }
+  .control-detail figcaption { text-align:left; }
+}
+@media print {
+  .focus-nav,.focus-end,.focus .breadcrumb,.focus-guide { display:none; }
+  .focus-main { padding:0; }
+  .atlas-graphic { display:block; }
+  .atlas-mobile { display:none; }
+  .question,.stage { break-inside:avoid; }
+  .stages { display:block; }
+  .stage { margin:20px 0; }
+}

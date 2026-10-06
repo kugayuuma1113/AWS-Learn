@@ -1,0 +1,37 @@
+[
+  {
+    "mod": 1,
+    "url": "http://127.0.0.1:8765/modules/module-01.html",
+    "title": "クラウドの基本と、 責任の分担"
+  },
+  {
+    "mod": 2,
+    "url": "http://127.0.0.1:8765/modules/module-02.html",
+    "title": "コンピューティングと、 変化に強いシステム"
+  },
+  {
+    "mod": 3,
+    "url": "http://127.0.0.1:8765/modules/module-03.html",
+    "title": "コードとコンテナ、 実行方法を選ぶ"
+  },
+  {
+    "mod": 4,
+    "url": "http://127.0.0.1:8765/modules/module-04.html",
+    "title": "配置と配信を、 再現できる構成へ"
+  },
+  {
+    "mod": 5,
+    "url": "http://127.0.0.1:8765/modules/module-05.html",
+    "title": "ネットワークを、 境界と経路で 理解する"
+  },
+  {
+    "mod": 6,
+    "url": "http://127.0.0.1:8765/modules/module-06.html",
+    "title": "データの保存先を、 使い方から選ぶ"
+  },
+  {
+    "mod": 7,
+    "url": "http://127.0.0.1:8765/modules/module-07.html",
+    "title": "データの関係と、 読み書きの設計"
+  }
+]

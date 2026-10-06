@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="ディスクとして使う、オブジェクトとして保存する、ファイルを共有する。アクセス方法・寿命・共有範囲から、EBS・S3・EFSを整理します。">
+<title>Module 6 | データの保存先を、使い方から選ぶ
+</title>
+<link rel="stylesheet" href="../assets/css/style.css?v=20261006-5">
+<link rel="stylesheet" href="../assets/css/curriculum.css?v=20261006-curriculum-5">
+<script src="../assets/js/main.js" defer></script>
+</head>
+<body><a class="skip-link" href="#main">本文へスキップ</a>
+<header class="site-header"><a class="brand" href="../index.html"><span class="brand-mark">a /</span>AWS STUDY NOTES</a><span class="header-meta">SKILL BUILDER · VISUAL LEARNING</span>
+</header>
+<div class="shell">
+<aside class="toc">
+<p class="eyebrow toc-title">IN THIS MODULE
+</p>
+<nav aria-label="このページの目次">
+<ol>
+<li><a href="#models"><span>01</span>3つの保存方式</a>
+</li>
+<li><a href="#block"><span>02</span>インスタンスストアとEBS</a>
+</li>
+<li><a href="#snapshot"><span>03</span>EBSスナップショット</a>
+</li>
+<li><a href="#s3"><span>04</span>S3の構造と保護</a>
+</li>
+<li><a href="#access"><span>05</span>S3アクセス制御</a>
+</li>
+<li><a href="#classes"><span>06</span>S3ストレージクラス</a>
+</li>
+<li><a href="#shared"><span>07</span>EFSとStorage Gateway</a>
+</li>
+<li><a href="#choose"><span>08</span>実際の構成へ</a>
+</li>
+<li><a href="#review"><span>09</span>重要ポイントと復習</a>
+</li>
+<li><a href="#sources"><span>10</span>公式資料</a>
+</li>
+</ol>
+</nav><a class="toc-home" href="../index.html">← 学習ホームへ</a>
+</aside>
+<main id="main" class="article">
+<div class="breadcrumb"><a href="../index.html">Home</a> / <span class="term">Module</span> 06
+</div>
+<header class="hero">
+<p class="eyebrow"><span class="term">MODULE</span> 06 / <span class="term">STORAGE</span>
+</p>
+<h1><span class="heading-part">データの保存先を、</span> <span class="heading-part">使い方から選ぶ</span>
+</h1>
+<p class="lead">ディスクとして使う、<span class="term">オブジェクト</span>として<span class="term">保存する、</span>ファイルを共有する。アクセス方法・寿命・共有範囲から、EBS・S3・EFSを<span class="term">整理します。</span>
+</p>
+<div class="hero-meta"><span class="tag">9つの学習セクション</span><span class="tag">図解＋比較表＋復習</span><span class="tag">公式資料確認：2026.10.06</span>
+</div>
+<div class="learning-goals">
+<h2>このModuleで学ぶこと
+</h2>
+<div class="goal-grid">
+<p><b>01</b><span>ブロック・<span class="term">オブジェクト</span>・ファイルを<span class="term">使い分ける</span></span>
+</p>
+<p><b>02</b><span><span class="term">インスタンス</span>ストアとEBSの寿命を<span class="term">区別する</span></span>
+</p>
+<p><b>03</b><span>S3の構造・権限・<span class="term">ストレージ</span>クラスを<span class="term">理解する</span></span>
+</p>
+<p><b>04</b><span>EFSとStorage Gatewayの役割を<span class="term">説明する</span></span>
+</p>
+</div>
+</div>
+</header>
+<section id="models" class="chapter" aria-labelledby="models-title">
+<div class="section-title"><span class="section-number">01</span>
+<h2 id="models-title"><span class="heading-part">保存の形で、</span> <span class="heading-part">使い方が変わる</span>
+</h2>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="ブロック・オブジェクト・ファイルの比較。狭い画面では横にスクロールできます">
+<table>
+<caption>ブロック・<span class="term">オブジェクト</span>・ファイルの比較
+</caption>
+<thead>
+<tr>
+<th scope="col">方式
+</th>
+<th scope="col">どうアクセスするか
+</th>
+<th scope="col">AWSの例・用途
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">ブロック
+</th>
+<td>OSからディスクの領域として読み書きする
+</td>
+<td>EBS：OS・アプリ・自分で運用するDB
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">オブジェクト</span>
+</th>
+<td>キーを指定し、APIでデータを取得・<span class="term">保存する</span>
+</td>
+<td>S3：画像・ログ・<span class="term">バックアップ</span>・配信元
+</td>
+</tr>
+<tr>
+<th scope="row">ファイル
+</th>
+<td>ディレクトリとファイル名で共有する
+</td>
+<td>EFS：複数サーバーが使う<span class="term">共有ファイル</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">同じデータでも、</span> <span class="label-part">必要な操作から選ぶ</span></strong><span class="diagram-kind"><span class="term">COMPARISON</span></span>
+</div>
+<div class="diagram-body">
+<div class="catalog-grid">
+<div class="service data"><strong><span class="label-part">EBS</span></strong><small><span class="label-part">EC2のディスク</span></small>
+</div>
+<div class="service data"><strong><span class="label-part">Amazon S3</span></strong><small><span class="label-part">キーでオブジェクトを取得</span></small>
+</div>
+<div class="service data"><strong><span class="label-part">Amazon EFS</span></strong><small><span class="label-part">NFSでファイルを共有</span></small>
+</div>
+<div class="service control"><strong><span class="label-part">判断すること</span></strong><small><span class="label-part">更新方法・寿命・共有範囲</span></small>
+</div>
+</div>
+</div>
+<figcaption>サービスの優劣ではなく、アプリが必要とする保存方式を合わせます。S3をEC2の通常のローカルディスクとして扱うことはできません。
+</figcaption>
+</figure>
+</section>
+<section id="block" class="chapter" aria-labelledby="block-title">
+<div class="section-title"><span class="section-number">02</span>
+<h2 id="block-title"><span class="heading-part">ディスクの寿命を、</span> <span class="heading-part">インスタンスと分ける</span>
+</h2>
+</div>
+<p><strong><span class="term">インスタンス</span>ストア</strong>は、EC2ホストに直接接続された一時的な<span class="term">ストレージ</span>です。高速な作業領域や再作成できる<span class="term">キャッシュ</span>に<span class="term">使います。</span><strong><span class="term">Amazon</span> EBS</strong>は、EC2とは別に<span class="term">管理する</span>ブロック<span class="term">ストレージ</span>で、同じAZのEC2に<span class="term">接続します。</span>
+</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="保存が続く条件を確認する。狭い画面では横にスクロールできます">
+<table>
+<caption>保存が続く条件を<span class="term">確認する</span>
+</caption>
+<thead>
+<tr>
+<th scope="col">操作・性質
+</th>
+<th scope="col"><span class="term">インスタンス</span>ストア
+</th>
+<th scope="col">EBS
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">再起動
+</th>
+<td>通常は保持される
+</td>
+<td>通常は保持される
+</td>
+</tr>
+<tr>
+<th scope="row">停止・終了、ホスト障害
+</th>
+<td>データが失われる。永続保存にしない
+</td>
+<td>停止後も保持。終了時は削除設定に依存
+</td>
+</tr>
+<tr>
+<th scope="row">共有・配置
+</th>
+<td>その<span class="term">インスタンス</span>に結び付く
+</td>
+<td>同じAZで接続。別AZへの復元には<span class="term">スナップショット</span>など
+</td>
+</tr>
+<tr>
+<th scope="row">向く用途
+</th>
+<td>一時データ・再生成できるデータ
+</td>
+<td>OS・継続して必要なアプリのデータ
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<aside class="note important"><strong><span class="label-part">重要：EBSでも、</span> <span class="label-part">終了時の設定を確認する</span></strong><span class="term">インスタンス</span>終了時に<span class="term">削除する</span>設定<span class="term">（DeleteOnTermination）</span>が有効なら、そのEBSは削除されます。ルートボリュームは通常この設定が有効です。「EBSなら何をしても残る」とは<span class="term">考えません。</span>
+</aside>
+<p>EBSは必要な容量、IOPS（1秒あたりのI/O回数）、<span class="term">スループット</span>などでボリュームタイプを<span class="term">選びます。</span>容量を増やす操作もできますが、OS側のパーティションやファイルシステムの拡張が必要な<span class="term">場合があります。</span>性能は実際の処理を測って<span class="term">選びます。</span>
+</p>
+</section>
+<section id="snapshot" class="chapter" aria-labelledby="snapshot-title">
+<div class="section-title"><span class="section-number">03</span>
+<h2 id="snapshot-title"><span class="heading-part">変更分を保存し、</span> <span class="heading-part">時点を復元する</span>
+</h2>
+</div>
+<p><strong>EBS<span class="term">スナップショット</span></strong>は、ボリュームのある時点のデータを<span class="term">バックアップ</span>します。初回以降は変更されたブロックを<span class="term">保存する</span>増分方式です。
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">保存する差分と、</span> <span class="label-part">復元できる全体は別</span></strong><span class="diagram-kind"><span class="term">CHANGE</span> OVER TIME</span>
+</div>
+<div class="diagram-body">
+<div class="snapshot-history">
+<div class="snapshot-step">
+<h3>① 初回
+</h3>
+<div class="block-row"><span>A</span><span>B</span><span>C</span><span>D</span>
+</div>
+<p>使用中のブロックを保存。空き領域まで丸ごとコピーするわけ<span class="term">ではありません。</span>
+</p>
+</div>
+<div class="snapshot-step">
+<h3>② 次の保存
+</h3>
+<div class="block-row"><span>A</span><span class="changed">X</span><span>C</span><span>D</span>
+</div>
+<p>変更したB→Xを保存。復元時には必要な既存ブロックも<span class="term">使います。</span>
+</p>
+</div>
+<div class="snapshot-step">
+<h3>③ さらに変更
+</h3>
+<div class="block-row"><span>A</span><span>X</span><span class="changed">Y</span><span>D</span>
+</div>
+<p>変更したC→Yを保存。各時点のボリュームを<span class="term">復元できます。</span>
+</p>
+</div>
+</div>
+</div>
+<figcaption>A〜Dは使用中のブロック、オレンジは変更したブロック。増分でも、各<span class="term">スナップショット</span>からその時点のボリュームを<span class="term">復元できます。</span>
+</figcaption>
+</figure>
+<p>以前の<span class="term">スナップショット</span>を削除しても、後の復元に必要なブロックは保持されます。別AZへの復元、別リージョンへのコピーなどにも<span class="term">使えます。</span>Data <span class="term">Lifecycle</span> Managerで、対象やスケジュール・保持期間を決めてEBSの保存を<span class="term">自動化できます。</span>
+</p>
+<aside class="note "><strong><span class="label-part">補足：保存と復旧を、</span> <span class="label-part">セットで確認する</span></strong>書き込み中のアプリでは、整合性の確保も<span class="term">考えます。</span>保存できたことだけで安心せず、復元手順・復旧時間・保持期間を<span class="term">確認します。</span>
+</aside><a class="source" href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-snapshots.html">公式資料：EBS<span class="term">スナップショット</span> ↗</a>
+</section>
+<section id="s3" class="chapter" aria-labelledby="s3-title">
+<div class="section-title"><span class="section-number">04</span>
+<h2 id="s3-title"><span class="heading-part">S3は、</span> <span class="heading-part">キーでデータを扱う</span>
+</h2>
+</div>
+<p><strong><span class="term">Amazon</span> S3</strong>は<span class="term">オブジェクト</span><span class="term">ストレージ</span>です。バケットの中に、データ本体・キー・メタデータを持つ<span class="term">オブジェクト</span>を<span class="term">保存します。</span>容量を先に固定したディスクとして作成する<span class="term">必要はありません。</span>
+</p>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">バケットとオブジェクトを、</span> <span class="label-part">階層と属性で理解する</span></strong><span class="diagram-kind"><span class="term">OBJECT</span> <span class="term">MODEL</span></span>
+</div>
+<div class="diagram-body">
+<div class="object-example"><strong>バケット：<span class="term">study-media-example</span></strong>
+<dl>
+<dt>キー
+</dt>
+<dd><code>images/lesson-01.png</code>
+</dd>
+<dt>データ本体
+</dt>
+<dd>画像ファイルの内容
+</dd>
+<dt>メタデータ
+</dt>
+<dd><span class="term">Content-Type</span>：<span class="term">image</span>/png など
+</dd>
+<dt>タグ
+</dt>
+<dd>用途や分類を付ける別の仕組み
+</dd>
+</dl>
+</div>
+</div>
+<figcaption><span class="term">images</span>/はキーの<span class="term">プレフィックス</span>です。コンソールのフォルダー表示は整理のための見せ方で、通常のファイルシステムの階層とは<span class="term">異なります。</span>
+</figcaption>
+</figure>
+<div class="two-col">
+<div class="explain-card">
+<h3><span class="label-part">バージョニング</span>
+</h3>
+<p>更新前のバージョンを保持し、誤った上書きや削除から戻せるようにします。全バージョンを削除できる権限まで防ぐ仕組み<span class="term">ではありません。</span>
+</p>
+</div>
+<div class="explain-card">
+<h3><span class="label-part">耐久性と可用性</span>
+</h3>
+<p>S3は高い耐久性を目標に設計されています。データを失いにくいことと、いつでもアクセスできることは<span class="term">異なります。</span>単一AZのクラスではAZ喪失のリスクも<span class="term">考えます。</span>
+</p>
+</div>
+</div>
+<p>通常の<span class="term">オブジェクト</span>保存では、キーを指定してPUTで保存・更新し、GETで<span class="term">取得します。</span><span class="term">オブジェクト</span>数や全体容量を増やせても、個々の<span class="term">オブジェクト</span>や<span class="term">リクエスト</span>には上限があります。現在の<span class="term">マルチパート</span>アップロードの最大<span class="term">オブジェクト</span>サイズは48.8 TiBです。上限値の暗記より、保存方式の違いを優先して<span class="term">理解します。</span>
+</p><a class="source" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html">公式資料：S3の基本 ↗</a><a class="source" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">公式資料：<span class="term">マルチパート</span>アップロードの上限 ↗</a>
+</section>
+<section id="access" class="chapter" aria-labelledby="access-title">
+<div class="section-title"><span class="section-number">05</span>
+<h2 id="access-title"><span class="heading-part">誰に、何を、</span> <span class="heading-part">許可するかを決める</span>
+</h2>
+</div>
+<p>S3の権限はIAMポリシーやバケットポリシーなどで<span class="term">設定します。</span><span class="term">Block</span> <span class="term">Public</span> Accessで意図しない公開を防ぎ、必要なら署名付きURLで有効期限付きのアクセスを<span class="term">提供します。</span>アクセスの入口を分けたい場合はS3 <span class="term">Access</span> Pointsも<span class="term">使えます。</span>
+</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="特定プレフィックスを許可する例。狭い画面では横にスクロールできます">
+<table>
+<caption>特定<span class="term">プレフィックス</span>を許可する例
+</caption>
+<thead>
+<tr>
+<th scope="col">操作
+</th>
+<th scope="col">対象
+</th>
+<th scope="col">考え方
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row"><span class="term">ListBucket</span>
+</th>
+<td>バケットARN
+</td>
+<td>一覧の範囲を、<span class="term">プレフィックス</span>条件で絞る
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">GetObject</span> / <span class="term">PutObject</span>
+</th>
+<td>対象キーの<span class="term">オブジェクト</span>ARN
+</td>
+<td><span class="term">images</span>/など、指定範囲の取得・保存を許可する
+</td>
+</tr>
+<tr>
+<th scope="row">アクセス記録
+</th>
+<td>CloudTrailデータイベントなど
+</td>
+<td>記録対象を明示的に設定し、監査する
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<aside class="note important"><strong><span class="label-part">重要：1つのAllowだけで、</span> <span class="label-part">権限全体は決まらない</span></strong>指定範囲にAllowを書いても、ほかのポリシーの許可を取り消すわけ<span class="term">ではありません。</span>明示的なDenyなどを含めて<span class="term">評価します。</span><span class="term">Block</span> <span class="term">Public</span> Accessは、認証されたアクセスを一律にすべて拒否する設定<span class="term">でもありません。</span>
+</aside>
+<p>コンソールでは、バケット作成、<span class="term">オブジェクト</span>のアップロード、メタデータ・タグ・<span class="term">バージョニング</span>・権限をそれぞれ<span class="term">確認します。</span>すべての操作ログが何も設定せず自動記録されるとは考えず、必要な監査方法を<span class="term">有効にします。</span>
+</p>
+</section>
+<section id="classes" class="chapter" aria-labelledby="classes-title">
+<div class="section-title"><span class="section-number">06</span>
+<h2 id="classes-title"><span class="heading-part">アクセス頻度で、</span> <span class="heading-part">保存と取得の</span> <span class="heading-part">費用を変える</span>
+</h2>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="主なS3ストレージクラス。狭い画面では横にスクロールできます">
+<table>
+<caption>主なS3<span class="term">ストレージ</span>クラス
+</caption>
+<thead>
+<tr>
+<th scope="col">クラス
+</th>
+<th scope="col">利用の目安
+</th>
+<th scope="col">取得・配置の注意
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">S3 <span class="term">Standard</span>
+</th>
+<td>頻繁にアクセスするデータ
+</td>
+<td>低<span class="term">レイテンシー</span>で取得。複数AZに保存
+</td>
+</tr>
+<tr>
+<th scope="row">S3 <span class="term">Standard-IA</span>
+</th>
+<td>アクセスが少なく、すぐ取り出したい
+</td>
+<td>取得料金・最低保存期間などを確認
+</td>
+</tr>
+<tr>
+<th scope="row">S3 One <span class="term">Zone-IA</span>
+</th>
+<td>再作成可能な、低頻度のデータ
+</td>
+<td>単一AZ。AZ喪失に備えた用途判断が必要
+</td>
+</tr>
+<tr>
+<th scope="row">S3 <span class="term">Glacier</span> <span class="term">Instant</span> <span class="term">Retrieval</span>
+</th>
+<td>低頻度のアーカイブを即時に読む
+</td>
+<td>アーカイブでも即時取得。取得料金などを確認
+</td>
+</tr>
+<tr>
+<th scope="row">S3 <span class="term">Glacier</span> <span class="term">Flexible</span> <span class="term">Retrieval</span>
+</th>
+<td>復元を待てるアーカイブ
+</td>
+<td>通常は事前の復元が必要。方式により分〜時間
+</td>
+</tr>
+<tr>
+<th scope="row">S3 <span class="term">Glacier</span> Deep <span class="term">Archive</span>
+</th>
+<td>非常に低頻度の長期保存
+</td>
+<td>通常の復元は典型的に12時間、バルクは48時間
+</td>
+</tr>
+<tr>
+<th scope="row">S3 <span class="term">Intelligent-Tiering</span>
+</th>
+<td>頻度が変わる／予測しづらい
+</td>
+<td>監視料金などと、自動階層化の条件を確認
+</td>
+</tr>
+<tr>
+<th scope="row">S3 <span class="term">Express</span> One Zone
+</th>
+<td>単一AZで高性能・低<span class="term">レイテンシー</span>を重視
+</td>
+<td>ディレクトリバケット。一般的なクラスと仕様が<span class="term">異なる</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong><span class="term">ライフサイクル</span>ルール</strong>で、経過日数などに応じたクラス移行や有効期限を<span class="term">設定します。</span><span class="term">Intelligent-</span>Tieringはアクセス状況に応じて3つの即時アクセス層を自動選択し、追加で2つのアーカイブ層を有効にできます。すべての階層が即時取得とは限りません。
+</p>
+<aside class="note "><strong><span class="label-part">補足：安い保管料だけで、</span> <span class="label-part">選ばない</span></strong>取得費用、<span class="term">リクエスト</span>料金、最低保存期間・課金サイズ、復元時間まで含めて<span class="term">比較します。</span>復元時間は典型値で、量や条件によって長くなる<span class="term">場合があります。</span>
+</aside><a class="source" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html">公式資料：S3<span class="term">ストレージ</span>クラス ↗</a><a class="source" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html">公式資料：アーカイブの復元時間 ↗</a>
+</section>
+<section id="shared" class="chapter" aria-labelledby="shared-title">
+<div class="section-title"><span class="section-number">07</span>
+<h2 id="shared-title"><span class="heading-part">共有ファイルと、</span> <span class="heading-part">既存拠点の保存を</span> <span class="heading-part">つなぐ</span>
+</h2>
+</div>
+<figure class="diagram">
+<div class="diagram-head"><strong><span class="label-part">複数のEC2から、</span> <span class="label-part">同じファイルへ</span> <span class="label-part">アクセス</span></strong><span class="diagram-kind">FLOW</span>
+</div>
+<div class="diagram-body">
+<div class="reading-flow">
+<div class="service compute"><strong><span class="label-part">EC2 A / EC2 B</span></strong><small><span class="label-part">NFSクライアント</span></small>
+</div>
+<div class="flow-arrow" aria-hidden="true">→
+</div>
+<div class="service data"><strong><span class="label-part">Amazon EFS</span></strong><small><span class="label-part">共有ファイルを保存</span></small>
+</div>
+</div>
+</div>
+<figcaption>複数サーバーが同じファイルシステムをマウントする例です。図の矢印はアクセスの関係で、共有のための通信・権限設定が<span class="term">必要です。</span>
+</figcaption>
+</figure>
+<p><strong><span class="term">Amazon</span> EFS</strong>は、NFSで使う<span class="term">共有ファイル</span><span class="term">ストレージ</span>です。ファイルの増減に応じて容量が<span class="term">変わります。</span>複数AZのRegionalと、単一AZのOne Zoneを<span class="term">区別します。</span>別VPC・別リージョンからの利用には、通信経路や<span class="term">レイテンシー</span>・転送費用を<span class="term">考えます。</span>
+</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Storage Gateway：教材で扱う3方式。狭い画面では横にスクロールできます">
+<table>
+<caption><span class="term">Storage</span> <span class="term">Gateway</span>：教材で扱う3方式
+</caption>
+<thead>
+<tr>
+<th scope="col">方式
+</th>
+<th scope="col"><span class="term">オンプレミス</span>側の入口
+</th>
+<th scope="col">AWS側との関係
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">S3 File <span class="term">Gateway</span>
+</th>
+<td>ファイル共有（NFS / SMB）
+</td>
+<td>S3<span class="term">オブジェクト</span>として保存
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">Volume</span> <span class="term">Gateway</span>
+</th>
+<td>ブロックボリューム<span class="term">（iSCSI）</span>
+</td>
+<td>EBS<span class="term">スナップショット</span>として<span class="term">バックアップ</span>
+</td>
+</tr>
+<tr>
+<th scope="row">Tape <span class="term">Gateway</span>
+</th>
+<td>仮想テープライブラリ
+</td>
+<td>既存のテープ<span class="term">バックアップ</span>方式をAWS保存へ接続
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><span class="term">Storage</span> Gatewayは、<span class="term">オンプレミス</span>の保存・<span class="term">バックアップ</span>方式をAWSへつなぐ橋渡しです。EFSのようなクラウドの<span class="term">共有ファイル</span>サービスとは、<span class="term">利用する</span>入口と目的が<span class="term">異なります。</span>ここではトランスクリプトにある3方式を<span class="term">整理しています。</span>
+</p><a class="source" href="https://docs.aws.amazon.com/efs/latest/ug/features.html">公式資料：EFSの機能と配置 ↗</a><a class="source" href="https://docs.aws.amazon.com/storagegateway/">公式資料：<span class="term">Storage</span> Gatewayの各方式 ↗</a>
+</section>
+<section id="choose" class="chapter" aria-labelledby="choose-title">
+<div class="section-title"><span class="section-number">08</span>
+<h2 id="choose-title"><span class="heading-part">Webシステムで、</span> <span class="heading-part">保存先を組み合わせる</span>
+</h2>
+</div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Webシステムでの使い分け。狭い画面では横にスクロールできます">
+<table>
+<caption>Webシステムでの使い分け
+</caption>
+<thead>
+<tr>
+<th scope="col">保存したいもの
+</th>
+<th scope="col">候補
+</th>
+<th scope="col">理由
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">OSやEC2上のDBのディスク
+</th>
+<td>EBS
+</td>
+<td>ブロックとして継続的に読み書きする
+</td>
+</tr>
+<tr>
+<th scope="row"><span class="term">配信する</span>画像・HTML・ログ
+</th>
+<td>S3
+</td>
+<td>キーで保存し、アプリや配信サービスから<span class="term">取得する</span>
+</td>
+</tr>
+<tr>
+<th scope="row">複数サーバー共通のファイル
+</th>
+<td>EFS
+</td>
+<td><span class="term">共有ファイル</span>システムを<span class="term">利用する</span>
+</td>
+</tr>
+<tr>
+<th scope="row">拠点の既存<span class="term">バックアップ</span>
+</th>
+<td><span class="term">Storage</span> <span class="term">Gateway</span>
+</td>
+<td>既存のファイル・ボリューム・テープ方式をつなぐ
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<aside class="note "><strong><span class="label-part">補足：静的サイトと、</span> <span class="label-part">HTTPS配信</span></strong>S3のウェブサイトエンドポイントはHTTPです。非公開のS3バケットからCloudFrontを使ってHTTPS<span class="term">配信する</span>なら、S3の通常のオリジンとOACを使う構成を<span class="term">検討します。</span>ウェブサイトエンドポイントにOACを付ける構成とは<span class="term">異なります。</span>
+</aside><a class="source" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteEndpoints.html">公式資料：S3ウェブサイトエンドポイント ↗</a><a class="source" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html">公式資料：CloudFrontからS3へのアクセス制限 ↗</a>
+</section>
+<section id="review" class="chapter" aria-labelledby="review-title">
+<div class="section-title"><span class="section-number">09</span>
+<h2 id="review-title"><span class="heading-part">重要ポイントと、</span> <span class="heading-part">理解の確認</span>
+</h2>
+</div>
+<ul class="summary-list">
+<li>EBSはディスク、S3は<span class="term">オブジェクト、</span>EFSは<span class="term">共有ファイル。</span>
+</li>
+<li><span class="term">インスタンス</span>ストアは一時保存。EBSの保持も終了時の設定に<span class="term">依存する。</span>
+</li>
+<li><span class="term">スナップショット</span>は増分保存でも、各時点の全体を復元できる。
+</li>
+<li>S3は頻度・取得時間・費用・配置と、権限・バージョンを合わせて<span class="term">設計する。</span>
+</li>
+</ul>
+<div class="review-grid">
+<details>
+<summary>Q1. EC2を終了したら、EBSのデータは<span class="term">必ず残る？</span>
+</summary>
+<p>いいえ。終了時削除の設定を<span class="term">確認します。</span>必要なデータは<span class="term">バックアップ</span>も用意します。
+</p>
+</details>
+<details>
+<summary>Q2. S3のimages/は、通常のディスク上のフォルダーと同じ？
+</summary>
+<p>いいえ。<span class="term">オブジェクト</span>キーの<span class="term">プレフィックス</span>を、フォルダーのように表示しています。
+</p>
+</details>
+<details>
+<summary>Q3. Deep Archiveが安ければ、頻繁に読む画像も移してよい？
+</summary>
+<p>取得に復元待ちが必要なため適しません。費用と取得時間を一緒に<span class="term">比較します。</span>
+</p>
+</details>
+<details>
+<summary>Q4. 複数AZのEC2から同じファイルを使いたい場合は？
+</summary>
+<p>RegionalのEFSなどの<span class="term">共有ファイル</span>方式を<span class="term">検討します。</span>通信・権限も<span class="term">設定します。</span>
+</p>
+</details>
+</div>
+</section>
+<section id="sources" class="chapter" aria-labelledby="sources-title">
+<div class="section-title"><span class="section-number">10</span>
+<h2 id="sources-title"><span class="heading-part">確認に使った、</span> <span class="heading-part">公式資料</span>
+</h2>
+</div>
+<p class="small">元データ：<span class="term">scripts</span>/<span class="term">module6</span>.txt。提供されたトランスクリプトを意味のまとまりで再構成し、誤解しやすい箇所を以下のAWS公式資料で確認しました（2026年10月6日）。実際の操作・仕様・料金は最新版を<span class="term">確認してください。</span>
+</p>
+<ul class="sources-list">
+<li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html">S3の概要</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html">S3<span class="term">ストレージ</span>クラス</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">S3のアップロード上限</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html">アーカイブの復元</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-snapshots.html">EBS<span class="term">スナップショット</span></a>
+</li>
+<li><a href="https://docs.aws.amazon.com/efs/latest/ug/features.html">EFSの機能</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/storagegateway/"><span class="term">Storage</span> <span class="term">Gateway</span></a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteEndpoints.html">ウェブサイトエンドポイント</a>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html">CloudFrontとOAC</a>
+</li>
+</ul>
+</section>
+<nav class="module-nav" aria-label="モジュール間の移動"><a href="module-05.html">← <span class="term">Previous</span> · <span class="term">Module</span> 5</a><a href="../index.html">Home</a><a href="module-07.html">Next · <span class="term">Module</span> 7 →</a>
+</nav>
+<footer class="footer">AWS <span class="term">STUDY</span> <span class="term">NOTES</span> / <span class="term">MODULE</span> 06<br>個人学習用の補助教材です。AWS公式教材<span class="term">ではありません。</span>図は概念の理解を目的とし、完全な構築手順を示すもの<span class="term">ではありません。</span>
+</footer>
+</main>
+</div>
+</body>
+</html>
